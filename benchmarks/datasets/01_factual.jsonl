@@ -1,0 +1,2 @@
+{"messages": [{"role": "user", "content": "Explain what photosynthesis is and name the three main inputs required for it."}], "ground_truth": "{\"keywords\": [\"chlorophyll\", \"light\", \"water\", \"carbon dioxide\"]}"}
+{"messages": [{"role": "user", "content": "What is the primary difference between a classical computer bit and a quantum computer qubit?"}], "ground_truth": "{\"keywords\": [\"superposition\", \"entanglement\", \"probabilistic\", \"0 and 1 simultaneously\"]}"}

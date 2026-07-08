@@ -1,0 +1,1 @@
+{"messages": [{"role": "user", "content": "Solve this logic puzzle: Alice, Bob, and Charlie sit in a row. Alice is not next to Bob. Bob is sitting on the far right. Who is sitting in the middle?"}], "ground_truth": "Charlie"}

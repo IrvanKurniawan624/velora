@@ -1,0 +1,1 @@
+{"messages": [{"role": "user", "content": "Extract all PERSON, ORG, and LOC entities from the text: 'Elon Musk founded SpaceX in California.' Return strictly a JSON object with keys 'PERSON', 'ORG', and 'LOC' mapping to lists of strings."}], "ground_truth": "{\"PERSON\": [\"Elon Musk\"], \"ORG\": [\"SpaceX\"], \"LOC\": [\"California\"]}"}
