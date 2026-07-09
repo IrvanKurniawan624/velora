@@ -1,18 +1,22 @@
-import os
 import asyncio
+import os
+
 from app.clients.base_client import BaseClient
-from app.models import ChatRequest, ChatResponse
 from app.config import Settings
 from app.core.logger import get_logger
+from app.models import ChatRequest, ChatResponse
 
 logger = get_logger("local_client")
 
 try:
     from llama_cpp import Llama
+
     HAS_LLAMA_CPP = True
 except ImportError:
     HAS_LLAMA_CPP = False
-    logger.warning("llama-cpp-python not installed. Local client will run in mock mode.")
+    logger.warning(
+        "llama-cpp-python not installed. Local client will run in mock mode."
+    )
 
 
 class LocalClient(BaseClient):
@@ -23,7 +27,9 @@ class LocalClient(BaseClient):
 
         if HAS_LLAMA_CPP:
             if not os.path.exists(self.model_path):
-                logger.warning(f"Local model GGUF file not found at {self.model_path}. Expect failures if used.")
+                logger.warning(
+                    f"Local model GGUF file not found at {self.model_path}. Expect failures if used."
+                )
             else:
                 logger.info(f"Loading local model from {self.model_path}...")
                 try:
@@ -38,7 +44,9 @@ class LocalClient(BaseClient):
                 except Exception as e:
                     logger.error(f"Failed to load local model: {e}")
         else:
-            logger.warning("Running LocalClient in mock mode (llama-cpp-python missing).")
+            logger.warning(
+                "Running LocalClient in mock mode (llama-cpp-python missing)."
+            )
 
     async def chat_complete(self, request: ChatRequest) -> ChatResponse:
         if not HAS_LLAMA_CPP or not self.llm:
@@ -52,10 +60,7 @@ class LocalClient(BaseClient):
 
         formatted_messages = []
         for msg in request.messages:
-            formatted_messages.append({
-                "role": msg.role,
-                "content": msg.content
-            })
+            formatted_messages.append({"role": msg.role, "content": msg.content})
 
         # Run llama-cpp chat completion in executor to prevent blocking the asyncio loop.
         loop = asyncio.get_running_loop()
@@ -78,7 +83,7 @@ class LocalClient(BaseClient):
                 content=content,
                 model=request.model or "local-gguf",
                 finish_reason=finish_reason,
-                usage=usage
+                usage=usage,
             )
         except Exception as e:
             logger.error(f"Inference error in LocalClient: {e}")

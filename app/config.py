@@ -15,7 +15,6 @@ class Settings(BaseSettings):
 
     local_model_path: str = "models/qwen2.5-3b-instruct-q4_k_m.gguf"
     max_runtime_seconds: int = 570  # Global pipeline runtime limit (9.5 minutes)
-    max_task_runtime_seconds: int = 30  # Timeout limit per task request
 
     @property
     def allowed_models_list(self) -> list[str]:

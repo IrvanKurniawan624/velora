@@ -17,7 +17,6 @@ class SelfCheckService:
             logger.warning("Self-check failed: Empty or extremely short response.")
             return False
 
-        # 2. Standard LLM refusal or fallback phrases
         refusals = [
             "i cannot answer",
             "i am unable to",
@@ -29,22 +28,97 @@ class SelfCheckService:
             "unable to fulfill",
             "sorry, but i",
             "sorry, as an ai",
-            "tidak tahu",
-            "tidak bisa menjawab",
-            "tidak dapat menjawab",
+            "i do not have information",
+            "i do not have access",
+            "as a language model",
+            "i am not able to",
         ]
         response_lower = cleaned.lower()
         if any(phrase in response_lower for phrase in refusals):
-            logger.warning("Self-check failed: Response contains refusal/inability phrases.")
+            logger.warning(
+                "Self-check failed: Response contains refusal/inability phrases."
+            )
             return False
 
-        # 3. Category-specific semantic structural checks
+        # 3. General repetition loop check (if word count is substantial)
+        words_cleaned = cleaned.split()
+        if len(words_cleaned) > 15:
+            unique_words = set(words_cleaned)
+            if len(unique_words) / len(words_cleaned) < 0.35:
+                logger.warning("Self-check failed: Repetition loop detected in output.")
+                return False
+
+        # 4. Category-specific semantic structural checks
         if category == Category.SENTIMENT:
             # Check if sentiment keywords or JSON structure is present
-            sentiment_labels = ["positive", "negative", "neutral", "positif", "negatif", "netral"]
+            sentiment_labels = ["positive", "negative", "neutral"]
             has_label = any(lbl in response_lower for lbl in sentiment_labels)
             if not has_label:
-                logger.warning("Self-check failed: Sentiment response has no clear sentiment label.")
+                logger.warning(
+                    "Self-check failed: Sentiment response has no clear sentiment label."
+                )
+                return False
+
+        elif category == Category.MATH:
+            import re
+
+            # Check that there is at least one digit in the response
+            if not re.search(r"\d", cleaned):
+                logger.warning(
+                    "Self-check failed: Math task output contains no digits."
+                )
+                return False
+
+        elif category == Category.NER:
+            # NER outputs must not say "no entities found" or "none" if there are entities in prompt
+            if "no entities" in response_lower or response_lower in {
+                "none",
+                "n/a",
+                "empty",
+            }:
+                capitalized = [w for w in prompt.split() if w and w[0].isupper()]
+                if len(capitalized) > 1:
+                    logger.warning(
+                        "Self-check failed: NER response returned 'none' but prompt has capitalized words."
+                    )
+                    return False
+
+        elif category == Category.SUMMARIZE:
+            # Summary shouldn't be longer than the prompt (if prompt is substantial)
+            p_words = len(prompt.split())
+            c_words = len(cleaned.split())
+            if p_words > 30 and c_words >= p_words:
+                logger.warning(
+                    "Self-check failed: Summary is longer than or equal to the original prompt."
+                )
+                return False
+
+        elif category in {Category.CODE_GEN, Category.CODE_DEBUG}:
+            # A code output should have code block indicators or keywords if code is requested
+            code_indicators = [
+                "def ",
+                "class ",
+                "import ",
+                "function",
+                "fn ",
+                "let ",
+                "const ",
+                "var ",
+                "void",
+                "public",
+                "private",
+                "return",
+                "select ",
+                "from ",
+                "where ",
+            ]
+            has_code = (
+                any(ind in cleaned for ind in code_indicators) or "```" in cleaned
+            )
+            if not has_code:
+                logger.warning(
+                    "Self-check failed: Code task output contains no code structural markers."
+                )
                 return False
 
         return True

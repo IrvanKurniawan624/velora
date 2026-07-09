@@ -1,8 +1,9 @@
 import re
+
 from app.clients.base_client import BaseClient
 from app.core.constants import Category
-from app.models import ChatRequest, Message
 from app.core.logger import get_logger
+from app.models import ChatRequest, Message
 
 logger = get_logger("classifier")
 
@@ -27,6 +28,85 @@ class ClassifierService:
         self.client = client
         self.model = model
 
+    def extract_features(self, query: str) -> dict:
+        """Extract linguistic features and complexity markers from the query."""
+        q_lower = query.lower()
+        words = query.split()
+        word_count = len(words)
+
+        # 1. Math complexity (operators, variables, numbers)
+        math_operators = len(re.findall(r"[\+\-\*\/\=\<\>\^]|\\times|\\div", query))
+        digits = len(re.findall(r"\d+", query))
+        math_score = math_operators + (0.5 * digits)
+
+        # 2. Code complexity (programming structural tokens)
+        code_tokens = len(
+            re.findall(
+                r"\b(def|class|import|from|function|fn|let|const|var|return|public|private|void|int|float|double|char|struct)\b|[{};]",
+                query,
+            )
+        )
+
+        # 3. Instruction & Constraint count
+        instructions = len(
+            re.findall(
+                r"\b(write|create|implement|solve|calculate|evaluate|find|debug|fix|explain|summarize|condense|extract|identify|list|analyze|determine)\b",
+                q_lower,
+            )
+        )
+        constraints = len(
+            re.findall(
+                r"\b(must|only|not|without|except|exactly|limit|restrict|no explanation|in json|json format|words? limit|sentences? limit|bullet points?)\b",
+                q_lower,
+            )
+        )
+
+        # 4. Entity density (capitalized words excluding sentence starts, numbers, dates)
+        capitalized = len(
+            [
+                w
+                for idx, w in enumerate(words)
+                if w
+                and w[0].isupper()
+                and idx > 0
+                and not words[idx - 1].endswith((".", "?", "!"))
+            ]
+        )
+        special_entities = len(
+            re.findall(
+                r"\b(january|february|march|april|may|june|july|august|september|october|november|december|monday|tuesday|wednesday|thursday|friday|saturday|sunday|\d{4}|\d{1,2}/\d{1,2}/\d{2,4})\b",
+                q_lower,
+            )
+        )
+        entity_density = (capitalized + special_entities) / max(1, word_count)
+
+        # 5. Logical dependency & conditionals
+        conditionals = len(
+            re.findall(
+                r"\b(if|else|then|when|unless|otherwise|because|therefore|consequently|implies|suppose|assume|assumed|given)\b",
+                q_lower,
+            )
+        )
+
+        # 6. Ambiguity Indicators
+        ambiguities = len(
+            re.findall(
+                r"\b(maybe|perhaps|could|might|sometimes|unclear|ambiguous|depends|either|or|sarcastic|sarcasm|ironic|irony)\b",
+                q_lower,
+            )
+        )
+
+        return {
+            "word_count": word_count,
+            "math_score": math_score,
+            "code_tokens": code_tokens,
+            "instruction_count": instructions,
+            "constraint_count": constraints,
+            "entity_density": entity_density,
+            "conditionals": conditionals,
+            "ambiguities": ambiguities,
+        }
+
     def _rule_based_classify(self, query: str) -> Category | None:
         q = query.lower()
 
@@ -35,15 +115,10 @@ class ClassifierService:
             w in q
             for w in [
                 "sentiment",
-                "sentimen",
                 "emotion",
-                "emosi",
                 "positive",
                 "negative",
                 "neutral",
-                "positif",
-                "negatif",
-                "netral",
             ]
         ):
             return Category.SENTIMENT
@@ -55,11 +130,10 @@ class ClassifierService:
                 "named entity",
                 "entities",
                 "extract",
-                "ekstrak",
-                "entitas",
-                "temukan nama",
-                "organisasi",
-                "lokasi",
+                "entity",
+                "find name",
+                "organization",
+                "location",
             ]
         ):
             return Category.NER
@@ -69,11 +143,8 @@ class ClassifierService:
             for w in [
                 "summarize",
                 "summary",
-                "ringkas",
-                "ringkasan",
-                "rangkum",
-                "rangkuman",
-                "singkat",
+                "condense",
+                "shorten",
             ]
         ):
             return Category.SUMMARIZE
@@ -85,8 +156,7 @@ class ClassifierService:
                 "error in",
                 "fix code",
                 "bug in",
-                "perbaiki kode",
-                "salah di kode",
+                "code error",
                 "runtimeerror",
                 "syntaxerror",
                 "exception",
@@ -102,9 +172,9 @@ class ClassifierService:
                 "write a script",
                 "generate code",
                 "implement a function",
-                "tulis kode",
-                "buat fungsi",
-                "buat program",
+                "write code",
+                "create function",
+                "make program",
             ]
         ):
             return Category.CODE_GEN
@@ -114,9 +184,8 @@ class ClassifierService:
             for w in [
                 "riddle",
                 "logic puzzle",
-                "teka-teki",
-                "logika",
-                "deduksi",
+                "logic",
+                "deduction",
                 "deductive reasoning",
             ]
         ):
@@ -131,9 +200,8 @@ class ClassifierService:
                 "solve",
                 "integral",
                 "derivative",
-                "matematika",
-                "hitunglah",
-                "persamaan",
+                "mathematics",
+                "equation",
             ]
         ):
             return Category.MATH

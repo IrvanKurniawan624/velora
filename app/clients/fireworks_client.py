@@ -1,8 +1,9 @@
 from openai import AsyncOpenAI
+
 from app.clients.base_client import BaseClient
 from app.config import Settings
-from app.models import ChatRequest, ChatResponse
 from app.core.logger import get_logger
+from app.models import ChatRequest, ChatResponse
 
 logger = get_logger("fireworks_client")
 
@@ -51,12 +52,16 @@ class FireworksClient(BaseClient):
                     f"Requested model '{request.model}' not in allowed list. Falling back to allowed model: '{model_to_use}'"
                 )
         else:
-            logger.warning("No ALLOWED_MODELS configured. Proceeding with requested model.")
+            logger.warning(
+                "No ALLOWED_MODELS configured. Proceeding with requested model."
+            )
 
         if not model_to_use:
             raise ValueError("No model specified and allowed_models list is empty.")
 
-        logger.info(f"Sending chat completion to Fireworks using model: '{model_to_use}'")
+        logger.info(
+            f"Sending chat completion to Fireworks using model: '{model_to_use}'"
+        )
         response = await self.client.chat.completions.create(
             model=model_to_use,
             messages=[{"role": m.role, "content": m.content} for m in request.messages],

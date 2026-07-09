@@ -1,10 +1,10 @@
 from app.clients.base_client import BaseClient
 from app.core.constants import CATEGORY_PROMPT_FILES, PROMPTS_DIR, Category
+from app.core.logger import get_logger
 from app.models import ChatRequest, Message
 from app.services.classifier import ClassifierService
 from app.services.router import RouterService
 from app.services.self_check import SelfCheckService
-from app.core.logger import get_logger
 
 logger = get_logger("agent_service")
 
@@ -26,16 +26,30 @@ class AgentService:
         return ""
 
     async def run(self, user_message: str) -> str:
-        # 1. Classify
+        # 1. Classify & Extract Features
         category = await self.classifier.classify(user_message)
         logger.info(f"Task classified as: {category.value}")
 
+        features = self.classifier.extract_features(user_message)
+
         # 2. Route
-        route = self.router.route(category)
+        route = self.router.route(category, features)
 
         system_prompt = self._load_prompt(category)
 
         # 3. Process
+        max_tokens_map = {
+            Category.SENTIMENT: 30,
+            Category.NER: 100,
+            Category.FACTUAL: 200,
+            Category.SUMMARIZE: 250,
+            Category.MATH: 350,
+            Category.LOGIC: 350,
+            Category.CODE_DEBUG: 800,
+            Category.CODE_GEN: 1024,
+        }
+        tokens_limit = max_tokens_map.get(category, 512)
+
         if route == "local":
             logger.info("Processing locally...")
             try:
@@ -46,7 +60,7 @@ class AgentService:
                         Message(role="user", content=user_message),
                     ],
                     temperature=0.3,
-                    max_tokens=512,
+                    max_tokens=tokens_limit,
                 )
                 response = await self.local_client.chat_complete(request)
 
@@ -55,7 +69,9 @@ class AgentService:
                     logger.info("Local response passed validation.")
                     return response.content
 
-                logger.warning("Local response failed validation. Escalating to Fireworks...")
+                logger.warning(
+                    "Local response failed validation. Escalating to Fireworks..."
+                )
             except Exception as e:
                 logger.error(f"Local inference failed: {e}. Escalating to Fireworks...")
 
@@ -71,7 +87,7 @@ class AgentService:
                     Message(role="user", content=user_message),
                 ],
                 temperature=0.3,
-                max_tokens=1024,
+                max_tokens=tokens_limit,
             )
             response = await self.fireworks_client.chat_complete(request)
             return response.content

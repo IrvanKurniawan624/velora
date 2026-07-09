@@ -1,14 +1,13 @@
 import asyncio
 
-from app.config import Settings
-from app.clients.local_client import LocalClient
 from app.clients.fireworks_client import FireworksClient
-from app.services.classifier import ClassifierService
+from app.clients.local_client import LocalClient
+from app.config import Settings
 from app.services.agent import AgentService
+from app.services.classifier import ClassifierService
 
-
-MODEL_CLASSIFIER = "___ISI_MODEL_CLASSIFIER_DISINI___"
-MODEL_AGENT = "___ISI_MODEL_AGENT_DISINI___"
+MODEL_CLASSIFIER = ""
+MODEL_AGENT = ""
 
 
 async def main() -> None:
@@ -20,8 +19,8 @@ async def main() -> None:
         base_url=settings.fireworks_base_url,
     )
 
-    classifier = ClassifierService(client=fireworks, model=MODEL_CLASSIFIER)
-    agent = AgentService(local_client=local, fireworks_client=fireworks)
+    classifier = ClassifierService(client=fireworks, model=MODEL_CLASSIFIER)  # noqa: F841
+    agent = AgentService(local_client=local, fireworks_client=fireworks)  # noqa: F841
 
 
 def cli() -> None:

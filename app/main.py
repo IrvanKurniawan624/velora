@@ -1,14 +1,15 @@
 import asyncio
 import sys
 from pathlib import Path
-from app.config import Settings
-from app.clients.local_client import LocalClient
+
 from app.clients.fireworks_client import FireworksClient
-from app.services.agent import AgentService
+from app.clients.local_client import LocalClient
+from app.config import Settings
+from app.core.logger import get_logger
 from app.schemas.result import Result
+from app.services.agent import AgentService
 from app.utils.io import load_tasks, save_results
 from app.utils.timer import TimerGuard
-from app.core.logger import get_logger
 
 logger = get_logger("main")
 
@@ -60,18 +61,21 @@ async def run_pipeline() -> None:
             break
 
         try:
-            # Run with task-level timeout
-            answer = await timer.run_with_timeout(
-                agent.run(task.prompt),
-                task_timeout=settings.max_task_runtime_seconds,
-            )
+            # Run with only global timer remaining
+            answer = await timer.run_with_timeout(agent.run(task.prompt))
             results.append(Result(task_id=task.task_id, answer=answer))
         except TimeoutError as te:
             logger.error(f"Task {task.task_id} timed out: {te}. Saving fallback error.")
-            results.append(Result(task_id=task.task_id, answer="Error: Task execution timed out."))
+            results.append(
+                Result(task_id=task.task_id, answer="Error: Task execution timed out.")
+            )
         except Exception as e:
-            logger.error(f"Error processing task {task.task_id}: {e}. Saving fallback error.")
-            results.append(Result(task_id=task.task_id, answer="Error: Internal system failure."))
+            logger.error(
+                f"Error processing task {task.task_id}: {e}. Saving fallback error."
+            )
+            results.append(
+                Result(task_id=task.task_id, answer="Error: Internal system failure.")
+            )
 
     # 6. Save results
     logger.info("Task processing completed. Saving results...")
@@ -81,7 +85,9 @@ async def run_pipeline() -> None:
         logger.error(f"Failed to save results: {e}")
         sys.exit(1)
 
-    logger.info(f"Pipeline finished successfully. Total elapsed time: {timer.elapsed():.2f}s")
+    logger.info(
+        f"Pipeline finished successfully. Total elapsed time: {timer.elapsed():.2f}s"
+    )
 
 
 def main() -> None:

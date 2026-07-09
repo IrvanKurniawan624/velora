@@ -1,8 +1,9 @@
 import json
 from pathlib import Path
-from app.schemas.task import Task
-from app.schemas.result import Result
+
 from app.core.logger import get_logger
+from app.schemas.result import Result
+from app.schemas.task import Task
 
 logger = get_logger("io_utils")
 
@@ -15,7 +16,7 @@ def load_tasks(file_path: str | Path) -> list[Task]:
         return []
 
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
 
         if isinstance(data, list):
@@ -23,7 +24,9 @@ def load_tasks(file_path: str | Path) -> list[Task]:
         elif isinstance(data, dict) and "tasks" in data:
             tasks = [Task.model_validate(item) for item in data["tasks"]]
         else:
-            raise ValueError("Root element must be a list or a dict containing a 'tasks' list.")
+            raise ValueError(
+                "Root element must be a list or a dict containing a 'tasks' list."
+            )
 
         logger.info(f"Successfully loaded {len(tasks)} tasks from {path}")
         return tasks
