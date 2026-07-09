@@ -1,0 +1,14 @@
+[
+  {
+    "id": "task_1",
+    "prompt": "What is the sentiment of the text: 'The new product is absolutely fantastic and I love it'?"
+  },
+  {
+    "id": "task_2",
+    "prompt": "Extract the names and locations from this text: 'John Doe visited Tokyo yesterday.'"
+  },
+  {
+    "id": "task_3",
+    "prompt": "Solve this equation: 3 * x + 5 = 20."
+  }
+]
