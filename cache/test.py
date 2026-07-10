@@ -20,7 +20,7 @@ if not api_key:
 
 try:
     from cache.wrapper import SemanticCacheWrapper
-    from cache.llm_evaluator import LLMEvaluator
+    from cache.cross_encoder import CrossEncoder
     from cache.evals import PerfEval
     from langchain_openai import ChatOpenAI
 except ImportError as e:
@@ -45,18 +45,14 @@ def run_test():
         print("  docker run -d --name redis -p 6379:6379 redis/redis-stack:latest")
         return
 
-    # 2. Configure LLM Evaluator using Fireworks minimax-m3
     model_name = "accounts/fireworks/models/minimax-m3"
-    print(f" Setting up LLM Evaluator using model: {model_name}...")
     
-    evaluator = LLMEvaluator.construct_with_fireworks(
-        model=model_name
-    )
-    
-    # Create and register the LLM-based Reranker
-    reranker = evaluator.create_reranker(batch_size=5)
+    # 2. Configure Cross-Encoder Reranker
+    print(" Setting up local Cross-Encoder Reranker...")
+    cross_encoder = CrossEncoder()
+    reranker = cross_encoder.create_reranker()
     cache.register_reranker(reranker)
-    print("Registered Fireworks LLM Reranker.")
+    print("Registered local Cross-Encoder Reranker.")
 
     # 3. Setup the Main LLM for cache misses (also using minimax-m3)
     print(f"  Setting up Main LLM using model: {model_name}...")
@@ -87,7 +83,8 @@ def run_test():
         ("Where is my package tracking info?", True),
         ("What is the cost of shipping to Japan?", True),
         ("What are your customer service contact details?", True),
-        ("Can I return something I bought?", True),
+        ("is it possible to return something I bought?", True),
+        ("How much would it cost to ship to Japan?", True),
         # Expected Misses (unrelated queries)
         ("What is the capital of France?", False),
         ("Tell me a programming joke.", False),
@@ -124,7 +121,8 @@ def run_test():
                 print(f"   Matched Prompt: '{match.prompt}'")
                 print(f"   Response: '{match.response}'")
                 print(f"   Reranker Score: {match.reranker_score}")
-                print(f"   Reranker Reason: {match.reranker_reason}")
+                if match.reranker_reason:
+                    print(f"   Reranker Reason: {match.reranker_reason}")
             else:
                 # Cache MISS -> Call the Main LLM
                 latency_label = "cache_miss"
