@@ -88,3 +88,18 @@ Format and lint the codebase with Ruff:
 uv run ruff check
 uv run ruff format
 ```
+
+### Run Local Agent Benchmark Simulator
+
+Simulate the Track 1 grading sandbox (including the 80% accuracy gate) over the 19 standard evaluation tasks:
+```bash
+uv run python benchmarks/run_benchmark.py
+```
+For detailed instructions on setup, running pytest evaluations, and using the web logs dashboard, see the [Benchmarks Guide](docs/benchmarks_guide.md).
+
+## Docker Support
+
+We provide full support for packaging and running the agent inside a Docker container matching the grading sandbox limits (4 GB RAM, 2 vCPUs). 
+
+For step-by-step instructions on building the image, bundling the quantized local model weights, and running local verification checks, refer to the [Docker Guide](docs/docker_guide.md).
+
