@@ -1,0 +1,66 @@
+[
+  {
+    "task_id": "benchmark-01-factual",
+    "prompt": "Explain what photosynthesis is and name the three main inputs required for it."
+  },
+  {
+    "task_id": "benchmark-02-math",
+    "prompt": "A farmer has 150 apples. He sells 20% of them on Monday, and then 15 more on Tuesday. How many apples does he have left?"
+  },
+  {
+    "task_id": "benchmark-03-sentiment",
+    "prompt": "Classify the sentiment of the following product review as positive, negative, or neutral, and provide a short reason. Review: 'The vacuum cleaner is powerful but it is too loud.' Return strictly JSON with keys: 'sentiment' and 'reason'."
+  },
+  {
+    "task_id": "benchmark-04-summarisation",
+    "prompt": "Summarize the following passage into a JSON format containing a list of 2 key bullet points. Passage: 'Model Context Protocol (MCP) is an open standard that enables developers to build secure, bidirectional connections between AI models and their data sources. It provides a standardized way to expose databases, local files, and APIs to LLMs safely.' Return strictly JSON with a single key 'bullets' which is a list of strings."
+  },
+  {
+    "task_id": "benchmark-05-ner",
+    "prompt": "Extract all PERSON, ORG, and LOC entities from the text: 'Elon Musk founded SpaceX in California.' Return strictly a JSON object with keys 'PERSON', 'ORG', and 'LOC' mapping to lists of strings."
+  },
+  {
+    "task_id": "benchmark-06-debugging",
+    "prompt": "Fix the bugs in this python function. It should return the sum of all even numbers in a list, but it currently returns incorrect results or fails:\n\ndef sum_evens(nums):\n    total = 0\n    for n in nums:\n        if n % 2 == 1:\n            total += n\n    return n\n\nReturn ONLY the corrected python function implementation."
+  },
+  {
+    "task_id": "benchmark-07-logic",
+    "prompt": "Solve this logic puzzle: Alice, Bob, and Charlie sit in a row. Alice is not next to Bob. Bob is sitting on the far right. Who is sitting in the middle?"
+  },
+  {
+    "task_id": "benchmark-08-codegen",
+    "prompt": "Write a Python function named `is_palindrome` that takes a string and returns True if it is a palindrome, and False otherwise. Ignore case and non-alphanumeric characters. Return ONLY the python function implementation."
+  },
+  {
+    "task_id": "practice-01",
+    "prompt": "What is the capital of Australia, and what body of water is it near?"
+  },
+  {
+    "task_id": "practice-02",
+    "prompt": "A store has 240 items. It sells 15% on Monday and 60 more on Tuesday. How many items remain?"
+  },
+  {
+    "task_id": "practice-03",
+    "prompt": "Classify the sentiment of this review: The battery life is great, but the screen scratches too easily."
+  },
+  {
+    "task_id": "practice-04",
+    "prompt": "Summarize the following in exactly one sentence: Artificial intelligence is transforming industries from healthcare to finance. By automating routine tasks and analyzing vast datasets, AI systems help professionals make more informed decisions, increase productivity, and solve complex problems."
+  },
+  {
+    "task_id": "practice-05",
+    "prompt": "Extract all named entities and their types from: Maria Sanchez joined Fireworks AI in Berlin last March."
+  },
+  {
+    "task_id": "practice-06",
+    "prompt": "This function should return the max of a list but has a bug: def get_max(nums): return nums[0]. Find and fix it."
+  },
+  {
+    "task_id": "practice-07",
+    "prompt": "Three friends, Sam, Jo, and Lee, each own a different pet: cat, dog, bird. Sam does not own the bird. Jo owns the dog. Who owns the cat?"
+  },
+  {
+    "task_id": "practice-08",
+    "prompt": "Write a Python function that returns the second-largest number in a list, handling duplicates correctly."
+  }
+]

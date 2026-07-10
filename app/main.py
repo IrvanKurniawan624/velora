@@ -3,6 +3,12 @@ import os
 import pathlib
 import sys
 from openai import OpenAI
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 
 def resolve_model(prompt: str, allowed_models: list[str]) -> str:
     # Determine task type
