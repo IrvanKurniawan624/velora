@@ -24,9 +24,10 @@ class LocalClient:
             logger.info(f"Loading local model from {self.model_path}...")
             self.llm = Llama(
                 model_path=self.model_path,
-                n_ctx=2048,
-                n_threads=2,
-                logits_all=True,
+                n_ctx=1024,       # Reduced from 2048 — sufficient for all benchmark tasks
+                n_threads=2,      # Match container vCPU budget
+                n_batch=128,      # Smaller batch = lower memory pressure on 4 GB limit
+                logits_all=True,  # Required for logprobs-based confidence scoring
                 verbose=False
             )
             logger.info("Local model loaded successfully.")
@@ -55,7 +56,7 @@ class LocalClient:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
 
-        # Call create_chat_completion with logprobs=True
+        # Call create_chat_completion with logprobs on output tokens only
         try:
             response = self.llm.create_chat_completion(
                 messages=messages,
