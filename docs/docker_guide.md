@@ -1,78 +1,97 @@
 # Docker Build & Run Guide
 
-This guide explains how to build, run, and locally test the Velora AI Agent container under the exact resource limits of the Track 1 grading environment (4 GB RAM, 2 vCPUs).
+This guide explains how to build, run, and locally test the agent container under the exact resource limits of the Track 1 grading environment (4 GB RAM, 2 vCPUs).
 
 ---
 
-## 1. Build the Docker Image
-To compile dependencies (`llama-cpp-python` wheels) and bundle the quantized local model weights (`gemma-2-2b-it-Q4_K_M.gguf`), build the image from the project root:
+## 1. Prerequisites
+
+Before running, create a `.env` file at the project root with your API credentials (see `.env.example`):
+
+```
+FIREWORKS_API_KEY=your_api_key_here
+```
+
+> **Note:** The `.env` file is listed in `.dockerignore` and is never copied into the image. It is injected at runtime only via `--env-file`.
+
+---
+
+## 2. Build the Docker Image
+
+To compile dependencies (`llama-cpp-python` wheels), install the OpenMP runtime (`libgomp1`) required by the local GGUF model, and bundle the quantized model weights (`gemma-2-2b-it-Q4_K_M.gguf`), build the image from the project root:
 
 ```bash
 docker build -t velora-agent .
 ```
 
+> **First build:** The GGUF model (~1.6 GB) is downloaded during build. Subsequent rebuilds of code-only changes reuse the cached layer and complete in ~10 seconds.
+
 ---
 
-## 2. Run with Resource Limits
-Run the container with CPU, Memory, and Mount constraints matching the sandbox grading host:
+## 3. Run the Agent (Grading Mode)
 
+Run the container with CPU, Memory, and volume constraints matching the sandbox grading host. Use `--env-file .env` to securely inject credentials:
+
+### Linux / macOS (bash):
 ```bash
-docker run -it --cpus="2.0" --memory="4g" \
+docker run --env-file .env --cpus="2.0" --memory="4g" \
   -v "$(pwd)/input:/input" \
   -v "$(pwd)/output:/output" \
-  -e FIREWORKS_API_KEY="your_api_key_here" \
   velora-agent
 ```
 
-### Windows PowerShell equivalent:
+### Windows PowerShell:
 ```powershell
-docker run -it --cpus="2.0" --memory="4g" `
+docker run --env-file .env --cpus="2.0" --memory="4g" `
   -v "${pwd}/input:/input" `
   -v "${pwd}/output:/output" `
-  -e FIREWORKS_API_KEY="your_api_key_here" `
   velora-agent
 ```
 
 ---
 
-## 3. Command Line Flag Breakdown
+## 4. Command Line Flag Breakdown
 
 | Flag | Purpose | Explanation |
 | :--- | :--- | :--- |
-| `--cpus="2.0"` | CPU Limit | Restricts the container to a maximum of 2 vCPUs of host processing power. |
-| `--memory="4g"` | RAM Limit | Restricts the container to 4 GB of RAM. The container will face OOM termination if it exceeds this. |
-| `-v ...:/input` | Input Mount | Mounts the local host directory containing `tasks.json` to `/input/tasks.json` in the container. |
+| `--env-file .env` | Credentials | Reads all `KEY=VALUE` pairs from `.env` and injects them as environment variables. Preferred over `-e` flags for security. |
+| `--cpus="2.0"` | CPU Limit | Restricts the container to a maximum of 2 vCPUs — matches the hackathon sandbox. |
+| `--memory="4g"` | RAM Limit | Restricts the container to 4 GB of RAM. The container will be OOM-killed if it exceeds this. |
+| `-v ...:/input` | Input Mount | Mounts the local host directory containing `tasks.json` to `/input/tasks.json` inside the container. |
 | `-v ...:/output` | Output Mount | Mounts the local host directory to `/output` where the container writes `results.json`. |
-| `-e FIREWORKS_API_KEY="..."` | API Key Pass | Injects your Fireworks AI API key into the container's environment. |
 
 ---
 
-## 4. Verification Check
-Inside the container:
-1. `llama-cpp-python` will load the compiled C++ bindings.
-2. The agent will initialize and read tasks from `/input/tasks.json`.
-3. It will process all tasks using the hybrid routing orchestrator.
-4. It will write final formatted output to `/output/results.json`.
+## 5. Verification Checklist
+
+When the container starts, verify the following in the logs:
+
+1. ✅ `llama-cpp-python` loads without errors (requires `libgomp1` — already installed in the image).
+2. ✅ Local model initializes: look for `Loaded model from /app/models/gemma-2-2b-it-q4_k_m.gguf`.
+3. ✅ Agent reads tasks from `/input/tasks.json`.
+4. ✅ Tasks routed locally show `Source model: local` in stdout.
+5. ✅ Results written to `/output/results.json`.
+
+> **Troubleshooting:** If you see `libgomp.so.1: cannot open shared object file`, the image was built before the `libgomp1` fix was added. Rebuild with `docker build --no-cache -t velora-agent .`
 
 ---
 
-## 5. Running the Benchmark Suite Inside Docker
-Since the `benchmarks/` directory is ignored in `.dockerignore` to minimize the production image size, you can mount the benchmarks folder as a volume at runtime to run the accuracy scorecard check inside the resource-constrained container:
+## 6. Running the Benchmark Suite Inside Docker
 
+The `benchmarks/` directory is excluded from the production image (via `.dockerignore`) to keep the image lean. Mount it as a volume at runtime to run the full accuracy benchmark inside the resource-constrained container:
+
+### Linux / macOS (bash):
 ```bash
-docker run -it --cpus="2.0" --memory="4g" \
+docker run --env-file .env --cpus="2.0" --memory="4g" \
   -v "$(pwd)/benchmarks:/app/benchmarks" \
-  -e FIREWORKS_API_KEY="your_api_key_here" \
   velora-agent python benchmarks/run_benchmark.py
 ```
 
-### Windows PowerShell equivalent:
+### Windows PowerShell:
 ```powershell
-docker run -it --cpus="2.0" --memory="4g" `
+docker run --env-file .env --cpus="2.0" --memory="4g" `
   -v "${pwd}/benchmarks:/app/benchmarks" `
-  -e FIREWORKS_API_KEY="your_api_key_here" `
   velora-agent python benchmarks/run_benchmark.py
 ```
 
-This runs the exact `run_benchmark.py` grading simulation inside the limited sandbox to verify 100% correct setup and execution!
-
+This runs the full comparative benchmark (Baseline vs Optimized) inside the sandbox-equivalent environment. Reports are written to `benchmarks/reports/` on your host machine via the volume mount.

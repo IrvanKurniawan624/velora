@@ -22,10 +22,11 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 
-# Install runtime utilities (curl for downloading models, ca-certificates for ssl)
+# Install runtime utilities + OpenMP (required by llama-cpp-python for local model inference)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the compiled virtual environment from builder stage
