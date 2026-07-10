@@ -225,10 +225,18 @@ class AgentService:
                 
             # JSON format verification (for sentiment, ner, summarisation)
             elif task_type in ["sentiment", "ner", "summarise"] and "json" in prompt.lower():
-                # Check JSON is parseable
-                if not self.self_check.validate_json_structure(local_response.content):
+                required_keys = None
+                if task_type == "sentiment":
+                    required_keys = ["sentiment", "reason"]
+                elif task_type == "summarise":
+                    required_keys = ["bullets"]
+                elif task_type == "ner":
+                    required_keys = ["PERSON", "ORG", "LOC"]
+                    
+                # Check JSON is parseable and contains required keys
+                if not self.self_check.validate_json_structure(local_response.content, required_keys=required_keys):
                     local_ok = False
-                    logger.warning("Local response failed JSON validation.")
+                    logger.warning(f"Local response failed JSON validation or missing required keys for {task_type}.")
                     
             # Code compiler verification
             elif task_type == "code":
