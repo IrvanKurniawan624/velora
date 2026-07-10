@@ -24,7 +24,16 @@ To compile dependencies (`llama-cpp-python` wheels), install the OpenMP runtime 
 docker build -t velora-agent .
 ```
 
+> `-t velora-agent` is the **image name** (equivalent of `--name` for containers). All `docker run` commands below reference this exact tag.
+
 > **First build:** The GGUF model (~1.6 GB) is downloaded during build. Subsequent rebuilds of code-only changes reuse the cached layer and complete in ~10 seconds.
+
+### Names Reference
+| | Name | Set by |
+| :--- | :--- | :--- |
+| **Image** | `velora-agent` | `-t velora-agent` in `docker build` |
+| **Grading container** | `velora-agent` | `--name velora-agent` in `docker run` |
+| **Benchmark container** | `velora-benchmark` | `--name velora-benchmark` in `docker run` |
 
 ---
 
