@@ -22,10 +22,15 @@ pip install -r requirements.txt
 To simulate the Track 1 grading harness locally, run our standalone agent accuracy benchmark from the project root:
 
 ```bash
-python benchmarks/run_benchmark.py
+python benchmarks/run_benchmark.py --mode both
 ```
 
-This script will:
+### Options:
+- `--mode speculative` (Default): Runs only the speculative routing agent pipeline.
+- `--mode baseline`: Runs the baseline agent without routing improvements (sets `DISABLE_ROUTING=True`).
+- `--mode both`: Runs both the baseline and speculative routing agent sequentially, displaying a comparative side-by-side scorecard (accuracy, gate status, execution time).
+
+The simulator will:
 1. Copy exactly 19 evaluation tasks to `input/tasks.json`.
 2. Run your active agent pipeline (`python -m app.main`).
 3. Grade the results against ground truths (keywords, code syntax validation, regex, structure).

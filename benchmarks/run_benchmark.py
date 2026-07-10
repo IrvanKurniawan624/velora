@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import pathlib
@@ -43,7 +44,6 @@ def load_ground_truths():
                     continue
                 prompt = messages[-1].get("content", "")
                 
-                # Codegen uses ground_truth_test, others use ground_truth
                 gt = data.get("ground_truth") or data.get("ground_truth_test")
                 gt_map[prompt] = {
                     "category": category,
@@ -60,7 +60,7 @@ def grade_factual(answer, gt_str):
         
     matched = [kw for kw in keywords if kw.lower() in answer.lower()]
     score = len(matched) / len(keywords) if keywords else 1.0
-    return score, f"Matched {len(matched)}/{len(keywords)} keywords: {matched}"
+    return score, f"Matched {len(matched)}/{len(keywords)} keywords"
 
 def grade_math(answer, gt_str):
     expected = str(gt_str).strip()
@@ -83,7 +83,6 @@ def grade_sentiment(answer, gt_str):
         score = 1.0 if (sentiment_match and has_reason) else 0.5 if sentiment_match else 0.0
         return score, f"Sentiment Match: {sentiment_match}, Has Reason: {has_reason}"
     except Exception as e:
-        # Fallback if model answered as plain text rather than JSON
         if expected.get("sentiment", "").lower() in answer.lower():
             return 0.5, "Sentiment matched in plain text (expected JSON)"
         return 0.0, f"Failed to parse JSON: {e}"
@@ -200,66 +199,36 @@ def grade_task(category, answer, gt_str):
         return 0.0, f"Unknown category: {category}"
     return grader(answer, gt_str)
 
-def main():
-    print("==================================================")
-    print("      VELORA HYBRID AGENT ACCURACY HARNESS       ")
-    print("==================================================")
-    
-    # 1. Load ground truths
-    gt_map = load_ground_truths()
-    if not gt_map:
-        print("Error: No datasets found. Run from velora directory.")
-        sys.exit(1)
+def run_agent_and_evaluate(python_exe, tasks, gt_map, env_vars=None):
+    """
+    Runs the agent and grades output/results.json.
+    """
+    env = os.environ.copy()
+    if env_vars:
+        env.update(env_vars)
         
-    # 2. Setup 19 evaluation tasks if present, otherwise fallback
-    eval_tasks_source = DATASETS_DIR / "19_tasks.json"
-    if eval_tasks_source.exists():
-        print("Initializing input/tasks.json with 19 benchmark tasks...")
-        INPUT_TASKS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        with open(eval_tasks_source, "r", encoding="utf-8") as sf:
-            eval_tasks_data = json.load(sf)
-        with open(INPUT_TASKS_FILE, "w", encoding="utf-8") as df:
-            json.dump(eval_tasks_data, df, indent=2)
+    # Clear any previous results
+    if OUTPUT_RESULTS_FILE.exists():
+        try:
+            os.remove(OUTPUT_RESULTS_FILE)
+        except Exception:
+            pass
             
-    if not INPUT_TASKS_FILE.exists():
-        print(f"Error: input/tasks.json not found at {INPUT_TASKS_FILE}.")
-        print("Please create tasks.json with your target evaluation prompts.")
-        sys.exit(1)
-        
-    with open(INPUT_TASKS_FILE, "r", encoding="utf-8") as f:
-        tasks = json.load(f)
-        
-    total_tasks = len(tasks)
-    print(f"Loaded {total_tasks} tasks to evaluate.")
-    
-    # 3. Execute the agent pipeline
-    print("\nRunning agent pipeline...")
     start_time = time.time()
-    
-    # Run the main agent entrypoint
-    python_exe = VELORA_DIR / ".venv" / "Scripts" / "python.exe"
-    if not python_exe.exists():
-        python_exe = "python"
-        
     result = subprocess.run(
         [str(python_exe), "-m", "app.main"],
         cwd=str(VELORA_DIR),
         capture_output=True,
-        text=True
+        text=True,
+        env=env
     )
-    
     elapsed_time = time.time() - start_time
-    print(f"Agent finished in {elapsed_time:.2f} seconds.")
     
     if result.returncode != 0:
-        print("Error: Agent exited with non-zero status code.")
-        print(result.stderr)
-        sys.exit(1)
+        return None, f"Agent failed to execute: {result.stderr or result.stdout}"
         
-    # 4. Read outputs and grade
     if not OUTPUT_RESULTS_FILE.exists():
-        print(f"Error: output/results.json not found at {OUTPUT_RESULTS_FILE}.")
-        sys.exit(1)
+        return None, "results.json was not created by the agent pipeline."
         
     with open(OUTPUT_RESULTS_FILE, "r", encoding="utf-8") as f:
         results = json.load(f)
@@ -268,21 +237,17 @@ def main():
     
     scores = []
     category_scores = {}
+    details = []
     
-    print("\n---------------- Grading Results ----------------")
-    for idx, task in enumerate(tasks, 1):
+    for task in tasks:
         task_id = task.get("task_id")
         prompt = task.get("prompt")
-        
         answer = results_map.get(task_id, "")
-        gt_data = gt_map.get(prompt)
         
+        gt_data = gt_map.get(prompt)
         if not gt_data:
-            # Try fuzzy match on prompt in case of compression changes
-            # We match by finding a key in gt_map that is a substring of the prompt or vice versa
             fuzzy_match = None
             for p, val in gt_map.items():
-                # Strip spaces and punctuation for comparison
                 p_clean = re.sub(r"\W+", "", p).lower()
                 prompt_clean = re.sub(r"\W+", "", prompt).lower()
                 if p_clean in prompt_clean or prompt_clean in p_clean:
@@ -291,7 +256,7 @@ def main():
             gt_data = fuzzy_match
             
         if not gt_data:
-            print(f"[-] Task {task_id}: Skip (No ground truth found for prompt)")
+            details.append((task_id, "skipped", 0.0, "No ground truth found"))
             continue
             
         category = gt_data["category"]
@@ -304,35 +269,128 @@ def main():
             category_scores[category] = []
         category_scores[category].append(score)
         
-        status_char = "PASS" if score == 1.0 else "WARN" if score > 0.0 else "FAIL"
-        print(f"[{status_char:<4}] Task {task_id} ({category}): Score={score:.2f} | {reason}")
+        details.append((task_id, category, score, reason))
         
-    # 5. Output Summary Scorecard
-    print("\n=================== SCORECARD ===================")
-    avg_overall_score = sum(scores) / len(scores) if scores else 0.0
+    correct_count = sum(1 for s in scores if s >= 0.8)
+    accuracy = (correct_count / len(tasks)) * 100 if tasks else 0.0
     
-    print("Category Breakdown:")
-    for cat, cat_list in category_scores.items():
-        cat_avg = sum(cat_list) / len(cat_list)
-        print(f"  - {cat.capitalize():<15}: {cat_avg*100:5.1f}% ({sum(1 for s in cat_list if s == 1.0)}/{len(cat_list)} correct)")
-        
-    print(f"\nOverall Accuracy Gate Check:")
-    correct_count = sum(1 for s in scores if s >= 0.8) # We count a task as correct if score is >= 0.8
-    accuracy_percentage = (correct_count / total_tasks) * 100 if total_tasks else 0.0
-    
-    # We display as n/19 style if total tasks is 19
-    formatted_ratio = f"{correct_count}/{total_tasks}"
-    
-    print(f"  - Correct Tasks  : {formatted_ratio} ({accuracy_percentage:.1f}%)")
-    
-    # Check 80% accuracy gate
-    if accuracy_percentage >= 80.0:
-        print("  - Leaderboard Gate: PASSED (>= 80% Accuracy)")
-    else:
-        print("  - Leaderboard Gate: FAILED (< 80% Accuracy)")
-        
-    print(f"  - Execution Time : {elapsed_time:.2f} seconds")
+    return {
+        "accuracy": accuracy,
+        "correct_count": correct_count,
+        "total_count": len(tasks),
+        "ratio_str": f"{correct_count}/{len(tasks)}",
+        "time": elapsed_time,
+        "category_scores": category_scores,
+        "details": details
+    }, None
+
+def main():
+    parser = argparse.ArgumentParser(description="Velora AI Agent Benchmark Simulator")
+    parser.add_argument(
+        "--mode",
+        choices=["speculative", "baseline", "both"],
+        default="both",
+        help="Benchmark mode: 'speculative' (with routing), 'baseline' (without routing), 'both' (comparison)"
+    )
+    args = parser.parse_args()
+
     print("==================================================")
+    print("      VELORA HYBRID AGENT ACCURACY HARNESS       ")
+    print("==================================================")
+    
+    # 1. Load ground truths
+    gt_map = load_ground_truths()
+    if not gt_map:
+        print("Error: No datasets found. Run from velora directory.")
+        sys.exit(1)
+        
+    # 2. Setup 19 evaluation tasks
+    eval_tasks_source = DATASETS_DIR / "19_tasks.json"
+    if eval_tasks_source.exists():
+        print("Initializing input/tasks.json with 19 benchmark tasks...")
+        INPUT_TASKS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(eval_tasks_source, "r", encoding="utf-8") as sf:
+            eval_tasks_data = json.load(sf)
+        with open(INPUT_TASKS_FILE, "w", encoding="utf-8") as df:
+            json.dump(eval_tasks_data, df, indent=2)
+            
+    if not INPUT_TASKS_FILE.exists():
+        print(f"Error: input/tasks.json not found at {INPUT_TASKS_FILE}.")
+        sys.exit(1)
+        
+    with open(INPUT_TASKS_FILE, "r", encoding="utf-8") as f:
+        tasks = json.load(f)
+        
+    print(f"Loaded {len(tasks)} tasks to evaluate.")
+    
+    # Resolve python path
+    python_exe = VELORA_DIR / ".venv" / "Scripts" / "python.exe"
+    if not python_exe.exists():
+        python_exe = "python"
+
+    results = {}
+    
+    # Run Baseline (without improvements) if requested
+    if args.mode in ["baseline", "both"]:
+        print("\n[1/2] Running Baseline Agent (WITHOUT routing/improvements)...")
+        res, err = run_agent_and_evaluate(
+            python_exe, tasks, gt_map,
+            env_vars={"DISABLE_ROUTING": "True", "ROUTING_MODE": "baseline"}
+        )
+        if err:
+            print(f"Baseline run failed: {err}")
+        else:
+            results["baseline"] = res
+            print(f"Baseline Completed: Accuracy = {res['ratio_str']} ({res['accuracy']:.1f}%) in {res['time']:.2f}s")
+            
+    # Run Speculative (with improvements) if requested
+    if args.mode in ["speculative", "both"]:
+        run_name = "[2/2] Running Speculative Routing Agent" if args.mode == "both" else "Running Speculative Routing Agent"
+        print(f"\n{run_name} (WITH routing/improvements)...")
+        res, err = run_agent_and_evaluate(
+            python_exe, tasks, gt_map,
+            env_vars={"DISABLE_ROUTING": "False", "ROUTING_MODE": "speculative"}
+        )
+        if err:
+            print(f"Speculative routing run failed: {err}")
+        else:
+            results["speculative"] = res
+            print(f"Speculative Completed: Accuracy = {res['ratio_str']} ({res['accuracy']:.1f}%) in {res['time']:.2f}s")
+
+    # 3. Print Results Summary
+    if args.mode == "both" and "baseline" in results and "speculative" in results:
+        base = results["baseline"]
+        spec = results["speculative"]
+        
+        print("\n================ COMPARATIVE SCORECARD ================")
+        print(f"{'Metric':<25} | {'Baseline (No Routing)':<21} | {'Speculative Routing':<21}")
+        print("-" * 75)
+        print(f"{'Overall Accuracy':<25} | {base['ratio_str']:<7} ({base['accuracy']:>5.1f}%) | {spec['ratio_str']:<7} ({spec['accuracy']:>5.1f}%)")
+        print(f"{'80% Accuracy Gate':<25} | {('PASSED' if base['accuracy'] >= 80.0 else 'FAILED'):<21} | {('PASSED' if spec['accuracy'] >= 80.0 else 'FAILED'):<21}")
+        print(f"{'Total Execution Time':<25} | {f'{base['time']:.2f}s':<21} | {f'{spec['time']:.2f}s':<21}")
+        print("=======================================================")
+        print("\n* Note: Local model caching and token savings are active in Speculative Routing mode.")
+    
+    elif len(results) == 1:
+        res = list(results.values())[0]
+        mode_label = list(results.keys())[0].upper()
+        
+        print(f"\n=================== {mode_label} SCORECARD ===================")
+        print("Category Breakdown:")
+        for cat, cat_list in res["category_scores"].items():
+            cat_avg = sum(cat_list) / len(cat_list)
+            print(f"  - {cat.capitalize():<15}: {cat_avg*100:5.1f}% ({sum(1 for s in cat_list if s == 1.0)}/{len(cat_list)} correct)")
+            
+        print(f"\nOverall Accuracy Gate Check:")
+        print(f"  - Correct Tasks  : {res['ratio_str']} ({res['accuracy']:.1f}%)")
+        
+        if res["accuracy"] >= 80.0:
+            print("  - Leaderboard Gate: PASSED (>= 80% Accuracy)")
+        else:
+            print("  - Leaderboard Gate: FAILED (< 80% Accuracy)")
+            
+        print(f"  - Execution Time : {res['time']:.2f} seconds")
+        print("==================================================")
 
 if __name__ == "__main__":
     main()
