@@ -1,3 +1,4 @@
+from typing import Any
 from pydantic import BaseModel
 
 
@@ -18,4 +19,4 @@ class ChatResponse(BaseModel):
     content: str
     model: str
     finish_reason: str | None = None
-    usage: dict[str, int] | None = None
+    usage: dict[str, Any] | None = None

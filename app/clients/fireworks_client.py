@@ -1,3 +1,4 @@
+import os
 from openai import AsyncOpenAI
 
 from app.clients.base_client import BaseClient
@@ -45,11 +46,20 @@ class FireworksClient(BaseClient):
         allowed = self.settings.allowed_models_list
         model_to_use = request.model
 
+        if not model_to_use:
+            agent_test_model = os.getenv("AGENT_TEST_MODEL")
+            if agent_test_model:
+                if agent_test_model.startswith("fireworks_ai/"):
+                    model_to_use = agent_test_model.replace("fireworks_ai/", "", 1)
+                else:
+                    model_to_use = agent_test_model
+                logger.info(f"Using model from AGENT_TEST_MODEL environment: '{model_to_use}'")
+
         if allowed:
-            if request.model not in allowed:
+            if model_to_use not in allowed:
                 model_to_use = allowed[0]
                 logger.info(
-                    f"Requested model '{request.model}' not in allowed list. Falling back to allowed model: '{model_to_use}'"
+                    f"Requested model '{model_to_use}' not in allowed list. Falling back to allowed model: '{model_to_use}'"
                 )
         else:
             logger.warning(

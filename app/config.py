@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     fireworks_base_url: str = "https://api.fireworks.ai/inference/v1"
     allowed_models: str = ""  # Comma-separated list of allowed models from env
 
-    local_model_path: str = "models/qwen2.5-3b-instruct-q4_k_m.gguf"
+    local_model_path: str = "app/models/gemma-2-2b-it-Q8_0.gguf"
     max_runtime_seconds: int = 570  # Global pipeline runtime limit (9.5 minutes)
 
     @property

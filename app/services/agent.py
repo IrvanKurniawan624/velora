@@ -1,10 +1,10 @@
 from app.clients.base_client import BaseClient
 from app.core.constants import CATEGORY_PROMPT_FILES, PROMPTS_DIR, Category
-from app.core.logger import get_logger
 from app.models import ChatRequest, Message
 from app.services.classifier import ClassifierService
 from app.services.router import RouterService
 from app.services.self_check import SelfCheckService
+from app.core.logger import get_logger
 
 logger = get_logger("agent_service")
 
@@ -69,9 +69,7 @@ class AgentService:
                     logger.info("Local response passed validation.")
                     return response.content
 
-                logger.warning(
-                    "Local response failed validation. Escalating to Fireworks..."
-                )
+                logger.warning("Local response failed validation. Escalating to Fireworks...")
             except Exception as e:
                 logger.error(f"Local inference failed: {e}. Escalating to Fireworks...")
 
@@ -81,7 +79,7 @@ class AgentService:
         if route == "fireworks":
             logger.info("Processing via Fireworks API...")
             request = ChatRequest(
-                model="",  # Automatically resolved by FireworksClient
+                model="",
                 messages=[
                     Message(role="system", content=system_prompt),
                     Message(role="user", content=user_message),
