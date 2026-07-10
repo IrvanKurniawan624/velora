@@ -288,9 +288,11 @@ def run_agent_and_evaluate(python_exe, tasks, gt_map, env_vars=None):
     if env_vars:
         env.update(env_vars)
         
-    # Clear any previous results
+    # Clear any previous results and metrics
     container_output_path = pathlib.Path("/output/results.json")
-    for path in [OUTPUT_RESULTS_FILE, container_output_path]:
+    container_metrics_path = pathlib.Path("/output/metrics.json")
+    host_metrics_file = VELORA_DIR / "output" / "metrics.json"
+    for path in [OUTPUT_RESULTS_FILE, container_output_path, host_metrics_file, container_metrics_path]:
         if path.exists():
             try:
                 os.remove(path)
@@ -337,6 +339,21 @@ def run_agent_and_evaluate(python_exe, tasks, gt_map, env_vars=None):
         
     results_map = {r["task_id"]: r["answer"] for r in results}
     
+    # Load actual remote metrics if available
+    target_metrics_file = host_metrics_file
+    if not target_metrics_file.exists():
+        if container_metrics_path.exists():
+            target_metrics_file = container_metrics_path
+            
+    metrics_map = {}
+    if target_metrics_file.exists():
+        try:
+            with open(target_metrics_file, "r", encoding="utf-8") as f:
+                metrics_data = json.load(f)
+            metrics_map = {m["task_id"]: m for m in metrics_data}
+        except Exception:
+            pass
+            
     scores = []
     category_scores = {}
     details = []
@@ -373,9 +390,26 @@ def run_agent_and_evaluate(python_exe, tasks, gt_map, env_vars=None):
             category_scores[category] = []
         category_scores[category].append(score)
         
-        # Calculate tokens
+        # Calculate tokens using actual metrics if available
+        task_metrics = metrics_map.get(task_id, {})
         is_spec = env_vars and env_vars.get("ROUTING_MODE") == "speculative"
-        in_tok, out_tok = estimate_tokens(prompt, answer, category, is_spec)
+        
+        if is_spec and task_metrics:
+            model_name = str(task_metrics.get("model", "")).lower()
+            is_local = "gemma" in model_name or "fallback" in model_name or "local" in model_name
+            if is_local:
+                # Local model = 0 remote tokens!
+                in_tok = 0
+                out_tok = 0
+            else:
+                # Remote model = use exact token count
+                total_task_tokens = task_metrics.get("remote_tokens_used", 0)
+                # Proxy input tokens using character count
+                in_tok = max(1, len(prompt) // 4)
+                out_tok = max(0, total_task_tokens - in_tok)
+        else:
+            in_tok, out_tok = estimate_tokens(prompt, answer, category, is_spec)
+            
         total_in_tokens += in_tok
         total_out_tokens += out_tok
         
@@ -577,6 +611,12 @@ def main():
         action="store_true",
         help="Run on all queries across the category datasets instead of the standard 19 tasks"
     )
+    parser.add_argument(
+        "--runs",
+        type=int,
+        default=1,
+        help="Number of benchmark runs to average over"
+    )
     args = parser.parse_args()
 
     print("==================================================")
@@ -624,30 +664,78 @@ def main():
     
     # Run Baseline (without improvements) if requested
     if args.mode in ["baseline", "both"]:
-        print("\n[1/2] Running Baseline Agent (WITHOUT routing/improvements)...")
-        res, err = run_agent_and_evaluate(
-            python_exe, tasks, gt_map,
-            env_vars={"DISABLE_ROUTING": "True", "ROUTING_MODE": "baseline"}
-        )
-        if err:
-            print(f"Baseline run failed: {err}")
-        else:
-            results["baseline"] = res
-            print(f"Baseline Completed: Accuracy = {res['ratio_str']} ({res['accuracy']:.1f}%) in {res['time']:.2f}s")
+        print(f"\n[1/2] Running Baseline Agent (WITHOUT routing/improvements) over {args.runs} runs...")
+        run_scores = []
+        run_times = []
+        run_in_tokens = []
+        run_out_tokens = []
+        run_total_tokens = []
+        
+        for r in range(1, args.runs + 1):
+            if args.runs > 1:
+                print(f"  - Run {r}/{args.runs}...")
+            res, err = run_agent_and_evaluate(
+                python_exe, tasks, gt_map,
+                env_vars={"DISABLE_ROUTING": "True", "ROUTING_MODE": "baseline"}
+            )
+            if err:
+                print(f"    Run {r} failed: {err}")
+            else:
+                run_scores.append(res)
+                run_times.append(res["time"])
+                run_in_tokens.append(res["input_tokens"])
+                run_out_tokens.append(res["output_tokens"])
+                run_total_tokens.append(res["total_tokens"])
+                
+        if run_scores:
+            avg_res = run_scores[-1].copy()
+            avg_res["accuracy"] = sum(x["accuracy"] for x in run_scores) / len(run_scores)
+            avg_res["correct_count"] = int(sum(x["correct_count"] for x in run_scores) / len(run_scores))
+            avg_res["ratio_str"] = f"{avg_res['correct_count']}/{len(tasks)}"
+            avg_res["time"] = sum(run_times) / len(run_times)
+            avg_res["input_tokens"] = int(sum(run_in_tokens) / len(run_in_tokens))
+            avg_res["output_tokens"] = int(sum(run_out_tokens) / len(run_out_tokens))
+            avg_res["total_tokens"] = int(sum(run_total_tokens) / len(run_total_tokens))
+            results["baseline"] = avg_res
+            print(f"Baseline Completed: Avg Accuracy = {avg_res['ratio_str']} ({avg_res['accuracy']:.1f}%) in {avg_res['time']:.2f}s")
             
     # Run Speculative (with improvements) if requested
     if args.mode in ["speculative", "both"]:
         run_name = "[2/2] Running Optimized Agent" if args.mode == "both" else "Running Optimized Agent"
-        print(f"\n{run_name} (WITH routing/improvements)...")
-        res, err = run_agent_and_evaluate(
-            python_exe, tasks, gt_map,
-            env_vars={"DISABLE_ROUTING": "False", "ROUTING_MODE": "speculative"}
-        )
-        if err:
-            print(f"Optimized routing run failed: {err}")
-        else:
-            results["speculative"] = res
-            print(f"Optimized Completed: Accuracy = {res['ratio_str']} ({res['accuracy']:.1f}%) in {res['time']:.2f}s")
+        print(f"\n{run_name} (WITH routing/improvements) over {args.runs} runs...")
+        run_scores = []
+        run_times = []
+        run_in_tokens = []
+        run_out_tokens = []
+        run_total_tokens = []
+        
+        for r in range(1, args.runs + 1):
+            if args.runs > 1:
+                print(f"  - Run {r}/{args.runs}...")
+            res, err = run_agent_and_evaluate(
+                python_exe, tasks, gt_map,
+                env_vars={"DISABLE_ROUTING": "False", "ROUTING_MODE": "speculative"}
+            )
+            if err:
+                print(f"    Run {r} failed: {err}")
+            else:
+                run_scores.append(res)
+                run_times.append(res["time"])
+                run_in_tokens.append(res["input_tokens"])
+                run_out_tokens.append(res["output_tokens"])
+                run_total_tokens.append(res["total_tokens"])
+                
+        if run_scores:
+            avg_res = run_scores[-1].copy()
+            avg_res["accuracy"] = sum(x["accuracy"] for x in run_scores) / len(run_scores)
+            avg_res["correct_count"] = int(sum(x["correct_count"] for x in run_scores) / len(run_scores))
+            avg_res["ratio_str"] = f"{avg_res['correct_count']}/{len(tasks)}"
+            avg_res["time"] = sum(run_times) / len(run_times)
+            avg_res["input_tokens"] = int(sum(run_in_tokens) / len(run_in_tokens))
+            avg_res["output_tokens"] = int(sum(run_out_tokens) / len(run_out_tokens))
+            avg_res["total_tokens"] = int(sum(run_total_tokens) / len(run_total_tokens))
+            results["speculative"] = avg_res
+            print(f"Optimized Completed: Avg Accuracy = {avg_res['ratio_str']} ({avg_res['accuracy']:.1f}%) in {avg_res['time']:.2f}s")
 
     # 3. Write Markdown Report
     write_markdown_report(results, len(tasks))
