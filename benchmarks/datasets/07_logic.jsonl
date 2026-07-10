@@ -1,1 +1,3 @@
 {"messages": [{"role": "user", "content": "Solve this logic puzzle: Alice, Bob, and Charlie sit in a row. Alice is not next to Bob. Bob is sitting on the far right. Who is sitting in the middle?"}], "ground_truth": "Charlie"}
+{"messages": [{"role": "user", "content": "Solve this logic puzzle: Three friends, Sam, Jo, and Lee, each own a different pet: cat, dog, bird. Sam does not own the bird. Jo owns the dog. Who owns the cat?"}], "ground_truth": "Sam"}
+{"messages": [{"role": "user", "content": "Solve this logic puzzle: If John is taller than Mary, and Mary is taller than Alice, is John taller than Alice?"}], "ground_truth": "Yes"}

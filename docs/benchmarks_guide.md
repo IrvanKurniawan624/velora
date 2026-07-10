@@ -1,6 +1,6 @@
-# Agent Evaluation and Benchmarking Suite
+# Agent Evaluation and Benchmarking Guide
 
-This suite provides a standardized, offline-ready framework for evaluating, profiling, and exporting training datasets from AI agent executions.
+This guide explains how to use the standardized evaluation and benchmarking suite to test, profile, and validate your agent.
 
 ---
 
@@ -18,6 +18,27 @@ pip install -r requirements.txt
 
 ## 2. Running Benchmarks
 
+### Running the Local Agent Accuracy Simulator
+To simulate the Track 1 grading harness locally, run our standalone agent accuracy benchmark from the project root:
+
+```bash
+python benchmarks/run_benchmark.py --mode both
+```
+
+### Options:
+- `--mode speculative` (Default): Runs only the speculative routing agent pipeline.
+- `--mode baseline`: Runs the baseline agent without routing improvements (sets `DISABLE_ROUTING=True`).
+- `--mode both`: Runs both the baseline and speculative routing agent sequentially, displaying a comparative side-by-side scorecard (accuracy, gate status, execution time).
+
+The simulator will:
+1. Copy exactly 19 evaluation tasks to `input/tasks.json`.
+2. Run your active agent pipeline (`python -m app.main`).
+3. Grade the results against ground truths (keywords, code syntax validation, regex, structure).
+4. Print a full scorecard checking the **80% Accuracy Gate** (requires at least 16/19 correct tasks).
+
+---
+
+## 3. Running Pytest Evaluations
 Evaluations are written as pytest test cases located in the `benchmarks/tests/` directory.
 
 ### Running the Entire Test Suite
@@ -34,7 +55,7 @@ To execute only a single test file (e.g., Code Generation):
 OPENAI_API_KEY=mock-key pytest benchmarks/tests/test_08_codegen.py
 ```
 
-### Dynamically Overriding the Model (this doesn't work idk why)
+### Dynamically Overriding the Model
 You can target a specific remote model at runtime by setting the `AGENT_TEST_MODEL` environment variable. Ensure the appropriate provider prefix and API keys are exported:
 
 ```bash
@@ -45,7 +66,7 @@ pytest benchmarks/tests/
 
 ---
 
-## 3. Viewing Results in the Dashboard
+## 4. Viewing Results in the Dashboard
 
 Every evaluation run automatically records trajectories and score metrics to a local SQLite database.
 
@@ -63,7 +84,7 @@ To stop the server, press `Ctrl+C` in the terminal.
 
 ---
 
-## 4. Exporting Datasets for Fine-Tuning(not implemented yet)
+## 5. Exporting Datasets for Fine-Tuning
 
 Once evaluations are completed and graded, you can parse the log database to extract successfully executed agent runs for model fine-tuning.
 
