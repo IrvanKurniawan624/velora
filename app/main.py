@@ -88,6 +88,7 @@ def main() -> None:
     
     # 4. Process tasks
     results = []
+    metrics = []
     for idx, task in enumerate(tasks, 1):
         task_id = task.get("task_id")
         prompt = task.get("prompt")
@@ -102,14 +103,23 @@ def main() -> None:
             # Process via speculative routing service
             response = agent_service.process_task(prompt)
             answer = response.content
+            model = response.model
+            remote_tokens = response.remote_tokens_used
             print(f"Success. Source model: {response.model} | Answer length: {len(answer)} chars.")
         except Exception as e:
             print(f"Error processing task {task_id}: {e}", file=sys.stderr)
             answer = f"Error during model generation: {e}"
-
+            model = "error"
+            remote_tokens = 0
+            
         results.append({
             "task_id": task_id,
             "answer": answer
+        })
+        metrics.append({
+            "task_id": task_id,
+            "model": model,
+            "remote_tokens_used": remote_tokens
         })
         
     # 5. Write results
@@ -118,6 +128,12 @@ def main() -> None:
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=2, ensure_ascii=False)
         print(f"Successfully wrote results to {output_file}")
+        
+        # Write metrics
+        metrics_file = output_file.parent / "metrics.json"
+        with open(metrics_file, "w", encoding="utf-8") as f:
+            json.dump(metrics, f, indent=2, ensure_ascii=False)
+        print(f"Successfully wrote metrics to {metrics_file}")
     except Exception as e:
         print(f"Error writing results to output file: {e}", file=sys.stderr)
         sys.exit(1)
