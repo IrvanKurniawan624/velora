@@ -34,7 +34,7 @@ Run the container with CPU, Memory, and volume constraints matching the sandbox 
 
 ### Linux / macOS (bash):
 ```bash
-docker run --env-file .env --cpus="2.0" --memory="4g" \
+docker run --name velora-agent --rm --env-file .env --cpus="2.0" --memory="4g" \
   -v "$(pwd)/input:/input" \
   -v "$(pwd)/output:/output" \
   velora-agent
@@ -42,7 +42,7 @@ docker run --env-file .env --cpus="2.0" --memory="4g" \
 
 ### Windows PowerShell:
 ```powershell
-docker run --env-file .env --cpus="2.0" --memory="4g" `
+docker run --name velora-agent --rm --env-file .env --cpus="2.0" --memory="4g" `
   -v "${pwd}/input:/input" `
   -v "${pwd}/output:/output" `
   velora-agent
@@ -54,6 +54,8 @@ docker run --env-file .env --cpus="2.0" --memory="4g" `
 
 | Flag | Purpose | Explanation |
 | :--- | :--- | :--- |
+| `--name velora-agent` | Container Name | Gives the container a fixed name so you can reference it with `docker logs velora-agent` or `docker stop velora-agent` instead of random names. |
+| `--rm` | Auto-remove | Automatically deletes the container when it exits — prevents dead containers from piling up. Remove this if you need to inspect logs after the run. |
 | `--env-file .env` | Credentials | Reads all `KEY=VALUE` pairs from `.env` and injects them as environment variables. Preferred over `-e` flags for security. |
 | `--cpus="2.0"` | CPU Limit | Restricts the container to a maximum of 2 vCPUs — matches the hackathon sandbox. |
 | `--memory="4g"` | RAM Limit | Restricts the container to 4 GB of RAM. The container will be OOM-killed if it exceeds this. |
@@ -82,14 +84,14 @@ The `benchmarks/` directory is excluded from the production image (via `.dockeri
 
 ### Linux / macOS (bash):
 ```bash
-docker run --env-file .env --cpus="2.0" --memory="4g" \
+docker run --name velora-benchmark --rm --env-file .env --cpus="2.0" --memory="4g" \
   -v "$(pwd)/benchmarks:/app/benchmarks" \
   velora-agent python benchmarks/run_benchmark.py
 ```
 
 ### Windows PowerShell:
 ```powershell
-docker run --env-file .env --cpus="2.0" --memory="4g" `
+docker run --name velora-benchmark --rm --env-file .env --cpus="2.0" --memory="4g" `
   -v "${pwd}/benchmarks:/app/benchmarks" `
   velora-agent python benchmarks/run_benchmark.py
 ```
