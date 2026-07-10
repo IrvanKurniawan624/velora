@@ -51,6 +51,56 @@ def load_ground_truths():
                 }
     return gt_map
 
+def load_all_dataset_tasks():
+    """
+    Loads all prompts and ground truths from the 8 category jsonl files,
+    dynamically generating task objects and a ground truth map.
+    """
+    tasks = []
+    gt_map = {}
+    
+    dataset_files = {
+        "factual": "01_factual.jsonl",
+        "math": "02_math.jsonl",
+        "sentiment": "03_sentiment.jsonl",
+        "summarisation": "04_summarisation.jsonl",
+        "ner": "05_ner.jsonl",
+        "debugging": "06_debugging.jsonl",
+        "logic": "07_logic.jsonl",
+        "codegen": "08_codegen.jsonl"
+    }
+    
+    for category, filename in dataset_files.items():
+        filepath = DATASETS_DIR / filename
+        if not filepath.exists():
+            continue
+        with open(filepath, "r", encoding="utf-8") as f:
+            idx = 1
+            for line in f:
+                if not line.strip():
+                    continue
+                try:
+                    data = json.loads(line)
+                    messages = data.get("messages", [])
+                    if not messages:
+                        continue
+                    prompt = messages[-1].get("content", "")
+                    gt = data.get("ground_truth") or data.get("ground_truth_test")
+                    
+                    task_id = f"{category}-{idx:02d}"
+                    tasks.append({
+                        "task_id": task_id,
+                        "prompt": prompt
+                    })
+                    gt_map[prompt] = {
+                        "category": category,
+                        "ground_truth": gt
+                    }
+                    idx += 1
+                except Exception:
+                    continue
+    return tasks, gt_map
+
 def grade_factual(answer, gt_str):
     try:
         gt_data = json.loads(gt_str)
@@ -430,6 +480,90 @@ def write_markdown_report(results, tasks_count):
         
     print(f"\n[+] Detailed markdown report successfully written to: benchmarks/reports/report_{timestamp}.md")
 
+    # Build structured JSON report data
+    json_report = {
+        "timestamp": time.strftime('%Y-%m-%d %H:%M:%S'),
+        "summary": {},
+        "categories": {},
+        "tasks": []
+    }
+    
+    if base:
+        json_report["summary"]["baseline"] = {
+            "accuracy": base["accuracy"],
+            "correct_count": base["correct_count"],
+            "total_count": base["total_count"],
+            "execution_time_seconds": base["time"],
+            "input_tokens": base["input_tokens"],
+            "output_tokens": base["output_tokens"],
+            "total_tokens": base["total_tokens"]
+        }
+    if spec:
+        json_report["summary"]["optimized"] = {
+            "accuracy": spec["accuracy"],
+            "correct_count": spec["correct_count"],
+            "total_count": spec["total_count"],
+            "execution_time_seconds": spec["time"],
+            "input_tokens": spec["input_tokens"],
+            "output_tokens": spec["output_tokens"],
+            "total_tokens": spec["total_tokens"]
+        }
+        
+    # Categories
+    categories = ["factual", "math", "sentiment", "summarisation", "ner", "debugging", "logic", "codegen"]
+    for cat in categories:
+        cat_data = {}
+        if base and cat in base["category_scores"]:
+            c_list = base["category_scores"][cat]
+            cat_data["baseline"] = sum(c_list) / len(c_list) if c_list else 0.0
+        if spec and cat in spec["category_scores"]:
+            c_list = spec["category_scores"][cat]
+            cat_data["optimized"] = sum(c_list) / len(c_list) if c_list else 0.0
+        json_report["categories"][cat] = cat_data
+        
+    # Task Details
+    tasks_map = {}
+    if base:
+        for detail in base["details"]:
+            task_id, category, score, reason, in_tok, out_tok = detail
+            tasks_map[task_id] = {
+                "task_id": task_id,
+                "category": category,
+                "baseline": {
+                    "score": score,
+                    "reason": reason,
+                    "input_tokens": in_tok,
+                    "output_tokens": out_tok
+                }
+            }
+    if spec:
+        for detail in spec["details"]:
+            task_id, category, score, reason, in_tok, out_tok = detail
+            if task_id not in tasks_map:
+                tasks_map[task_id] = {
+                    "task_id": task_id,
+                    "category": category
+                }
+            tasks_map[task_id]["optimized"] = {
+                "score": score,
+                "reason": reason,
+                "input_tokens": in_tok,
+                "output_tokens": out_tok
+            }
+            
+    json_report["tasks"] = list(tasks_map.values())
+    
+    # Save JSON reports
+    json_report_path = reports_dir / f"report_{timestamp}.json"
+    json_latest_path = reports_dir / "latest_report.json"
+    
+    with open(json_report_path, "w", encoding="utf-8") as jf:
+        json.dump(json_report, jf, indent=2)
+    with open(json_latest_path, "w", encoding="utf-8") as jf:
+        json.dump(json_report, jf, indent=2)
+        
+    print(f"[+] Structured JSON report successfully written to: benchmarks/reports/report_{timestamp}.json")
+
 def main():
     parser = argparse.ArgumentParser(description="Velora AI Agent Benchmark Simulator")
     parser.add_argument(
@@ -438,28 +572,40 @@ def main():
         default="both",
         help="Benchmark mode: 'speculative' (with routing), 'baseline' (without routing), 'both' (comparison)"
     )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Run on all queries across the category datasets instead of the standard 19 tasks"
+    )
     args = parser.parse_args()
 
     print("==================================================")
     print("             AI AGENT ACCURACY HARNESS            ")
     print("==================================================")
     
-    # 1. Load ground truths
-    gt_map = load_ground_truths()
-    if not gt_map:
-        print("Error: No datasets found. Run from velora directory.")
-        sys.exit(1)
-        
-    # 2. Setup 19 evaluation tasks
-    eval_tasks_source = DATASETS_DIR / "19_tasks.json"
-    if eval_tasks_source.exists():
-        print("Initializing input/tasks.json with 19 benchmark tasks...")
+    if args.all:
+        print("Loading all queries from datasets...")
+        tasks, gt_map = load_all_dataset_tasks()
         INPUT_TASKS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        with open(eval_tasks_source, "r", encoding="utf-8") as sf:
-            eval_tasks_data = json.load(sf)
         with open(INPUT_TASKS_FILE, "w", encoding="utf-8") as df:
-            json.dump(eval_tasks_data, df, indent=2)
+            json.dump(tasks, df, indent=2)
+    else:
+        # 1. Load standard ground truths
+        gt_map = load_ground_truths()
+        if not gt_map:
+            print("Error: No datasets found. Run from velora directory.")
+            sys.exit(1)
             
+        # 2. Setup standard 19 evaluation tasks
+        eval_tasks_source = DATASETS_DIR / "19_tasks.json"
+        if eval_tasks_source.exists():
+            print("Initializing input/tasks.json with 19 benchmark tasks...")
+            INPUT_TASKS_FILE.parent.mkdir(parents=True, exist_ok=True)
+            with open(eval_tasks_source, "r", encoding="utf-8") as sf:
+                eval_tasks_data = json.load(sf)
+            with open(INPUT_TASKS_FILE, "w", encoding="utf-8") as df:
+                json.dump(eval_tasks_data, df, indent=2)
+                
     if not INPUT_TASKS_FILE.exists():
         print(f"Error: input/tasks.json not found at {INPUT_TASKS_FILE}.")
         sys.exit(1)
