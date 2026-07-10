@@ -41,7 +41,8 @@ class AgentService:
         code_patterns = [
             r"def\s+\w+\(", r"import\s+", r"class\s+\w+", r"function\s*\(", 
             r"const\s+\w+\s*=", r"let\s+\w+\s*=", r"var\s+\w+\s*=", r"```python",
-            r"code", r"debug", "syntax", "compile"
+            r"code", r"debug", r"syntax", r"compile", r"python", r"function",
+            r"implementation", r"algorithm", r"program", r"script"
         ]
         if any(re.search(pat, prompt_lower) for pat in code_patterns):
             return "code"
@@ -130,6 +131,43 @@ class AgentService:
             logger.error(f"Fireworks API call failed: {e}")
             raise
 
+    def clean_and_extract_content(self, text: str, task_type: str) -> str:
+        """
+        Extracts clean code or JSON block from markdown code fences and removes chat chatter.
+        """
+        text = text.strip()
+        if not text:
+            return text
+
+        # If it's a code task
+        if task_type == "code":
+            match = re.search(r"```python\s*(.*?)\s*```", text, re.DOTALL | re.IGNORECASE)
+            if match:
+                return match.group(1).strip()
+            match = re.search(r"```\s*(.*?)\s*```", text, re.DOTALL)
+            if match:
+                return match.group(1).strip()
+            return text
+
+        # If it's a JSON-producing task
+        elif task_type in ["sentiment", "ner", "summarise"]:
+            match = re.search(r"```json\s*(.*?)\s*```", text, re.DOTALL | re.IGNORECASE)
+            if match:
+                return match.group(1).strip()
+            match = re.search(r"```\s*(.*?)\s*```", text, re.DOTALL)
+            if match:
+                return match.group(1).strip()
+            # Try finding the outer-most { ... }
+            match = re.search(r"(\{.*\})", text, re.DOTALL)
+            if match:
+                return match.group(1).strip()
+            return text
+
+        # For other tasks, just remove standard top/bottom backticks if any
+        text = re.sub(r'^```[a-zA-Z]*\n?', '', text)
+        text = re.sub(r'\n?```$', '', text)
+        return text.strip()
+
     def process_task(self, prompt: str) -> ChatResponse:
         """
         Orchestrates the dynamic Confidence-Cascaded Speculative Routing pipeline.
@@ -142,6 +180,8 @@ class AgentService:
             remote_model = self.select_remote_model(task_type)
             # Baseline does NOT compress the prompt or strip comments, send original prompt
             remote_response = self.generate_remote(prompt, model=remote_model)
+            # Clean remote answer too
+            remote_response.content = self.clean_and_extract_content(remote_response.content, task_type)
             return remote_response
 
         # 1. Local Cache Lookup
@@ -167,13 +207,15 @@ class AgentService:
         try:
             # Code tasks need higher token budgets to avoid truncated function bodies
             max_tokens = 1024 if task_type == "code" else 512 if task_type == "logic" else 256
-            local_response = self.local_client.generate(compressed_prompt, max_tokens=max_tokens)
+            local_response = self.local_client.generate(compressed_prompt, max_tokens=max_tokens, task_type=task_type)
             logger.info(f"Local client generated response. Confidence: {local_response.confidence:.2f}")
         except Exception as e:
             logger.warning(f"Local client generation failed: {e}")
             
         # 5. Local verification check
         if local_response and local_response.confidence > 0.0:
+            # Extract and clean content first so validation runs on clean code/JSON
+            local_response.content = self.clean_and_extract_content(local_response.content, task_type)
             local_ok = True
             
             # Refusal check
@@ -200,7 +242,8 @@ class AgentService:
                         error_msg=error_msg
                     )
                     try:
-                        corrected_response = self.local_client.generate(correction_prompt, max_tokens=max_tokens)
+                        corrected_response = self.local_client.generate(correction_prompt, max_tokens=max_tokens, task_type=task_type)
+                        corrected_response.content = self.clean_and_extract_content(corrected_response.content, task_type)
                         is_valid_corrected, _ = self.self_check.validate_python_syntax(corrected_response.content)
                         if is_valid_corrected and not self.self_check.has_refusal(corrected_response.content):
                             logger.info("Local self-correction succeeded!")
@@ -230,6 +273,7 @@ class AgentService:
             full_prompt = f"{compressed_prompt}\nOutput ONLY the direct answer. No intro, no explanation, no pleasantries, no yapping."
             
         remote_response = self.generate_remote(full_prompt, model=remote_model)
+        remote_response.content = self.clean_and_extract_content(remote_response.content, task_type)
         
         # Save to cache
         self.cache[prompt] = remote_response

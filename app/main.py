@@ -1,3 +1,4 @@
+import re
 import json
 import os
 import pathlib
@@ -12,6 +13,17 @@ except ImportError:
 from app.config import Settings
 from app.services import SelfCheckService
 from app.services.agent import AgentService
+
+
+def strip_markdown_fences(text: str) -> str:
+    """Remove markdown code fences (```json, ```python, ```) from model answers."""
+    # Strip leading/trailing whitespace first
+    text = text.strip()
+    # Remove opening fence with optional language tag
+    text = re.sub(r'^```[a-zA-Z]*\n?', '', text)
+    # Remove closing fence
+    text = re.sub(r'\n?```$', '', text)
+    return text.strip()
 
 def main() -> None:
     import logging
@@ -94,7 +106,7 @@ def main() -> None:
         except Exception as e:
             print(f"Error processing task {task_id}: {e}", file=sys.stderr)
             answer = f"Error during model generation: {e}"
-            
+
         results.append({
             "task_id": task_id,
             "answer": answer

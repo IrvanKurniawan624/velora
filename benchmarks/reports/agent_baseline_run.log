@@ -4,82 +4,82 @@ Found input tasks file: input/tasks.json
 Target output file: /output/results.json
 Loaded 19 tasks.
 [1/19] Processing task factual-01...
-Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 1397 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 1301 chars.
 [2/19] Processing task factual-02...
-Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 1388 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 1413 chars.
 [3/19] Processing task factual-03...
-Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 576 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 642 chars.
 [4/19] Processing task math-01...
 Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 306 chars.
 [5/19] Processing task math-02...
-Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 178 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 171 chars.
 [6/19] Processing task math-03...
-Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 282 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 284 chars.
 [7/19] Processing task sentiment-01...
-Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 199 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 183 chars.
 [8/19] Processing task sentiment-02...
-Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 220 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 200 chars.
 [9/19] Processing task sentiment-03...
-Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 256 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 244 chars.
 [10/19] Processing task summarisation-01...
-Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 276 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 264 chars.
 [11/19] Processing task summarisation-02...
-Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 307 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 289 chars.
 [12/19] Processing task ner-01...
-Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 87 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 75 chars.
 [13/19] Processing task ner-02...
-Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 119 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 107 chars.
 [14/19] Processing task debugging-01...
-Success. Source model: accounts/fireworks/models/kimi-k2p7-code | Answer length: 130 chars.
+Success. Source model: accounts/fireworks/models/kimi-k2p7-code | Answer length: 116 chars.
 [15/19] Processing task debugging-02...
-Success. Source model: accounts/fireworks/models/kimi-k2p7-code | Answer length: 53 chars.
+Success. Source model: accounts/fireworks/models/kimi-k2p7-code | Answer length: 39 chars.
 [16/19] Processing task logic-01...
-Success. Source model: accounts/fireworks/models/kimi-k2p7-code | Answer length: 302 chars.
+Success. Source model: accounts/fireworks/models/kimi-k2p7-code | Answer length: 216 chars.
 [17/19] Processing task logic-02...
-Success. Source model: accounts/fireworks/models/kimi-k2p7-code | Answer length: 192 chars.
+Success. Source model: accounts/fireworks/models/kimi-k2p7-code | Answer length: 216 chars.
 [18/19] Processing task codegen-01...
-Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 130 chars.
+Success. Source model: accounts/fireworks/models/kimi-k2p7-code | Answer length: 132 chars.
 [19/19] Processing task codegen-02...
-Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 342 chars.
+Success. Source model: accounts/fireworks/models/kimi-k2p7-code | Answer length: 184 chars.
 Successfully wrote results to /output/results.json
 Velora AI Agent execution complete.
 
 === STDERR ===
-2026-07-10 12:02:42,518 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
-2026-07-10 12:02:46,549 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 12:02:46,557 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
-2026-07-10 12:02:50,001 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 12:02:50,002 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
-2026-07-10 12:02:53,487 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 12:02:53,487 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
-2026-07-10 12:02:56,492 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 12:02:56,493 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
-2026-07-10 12:02:57,148 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 12:02:57,149 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
-2026-07-10 12:02:58,561 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 12:02:58,562 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
-2026-07-10 12:03:00,133 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 12:03:00,133 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
-2026-07-10 12:03:01,250 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 12:03:01,251 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
-2026-07-10 12:03:06,038 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 12:03:06,038 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
-2026-07-10 12:03:11,779 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 12:03:11,779 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
-2026-07-10 12:03:12,464 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 12:03:12,464 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
-2026-07-10 12:03:13,123 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 12:03:13,124 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
-2026-07-10 12:03:13,961 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 12:03:13,962 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
-2026-07-10 12:03:15,810 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 12:03:15,810 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
-2026-07-10 12:03:18,857 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 12:03:18,857 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
-2026-07-10 12:03:20,835 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 12:03:20,836 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
-2026-07-10 12:03:22,330 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 12:03:22,330 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
-2026-07-10 12:03:23,154 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 12:03:23,155 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
-2026-07-10 12:03:27,269 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 22:03:11,190 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
+2026-07-10 22:03:17,060 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 22:03:17,071 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
+2026-07-10 22:03:22,946 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 22:03:22,947 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
+2026-07-10 22:03:27,452 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 22:03:27,453 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
+2026-07-10 22:03:32,976 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 22:03:32,977 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
+2026-07-10 22:03:35,463 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 22:03:35,464 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
+2026-07-10 22:03:37,576 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 22:03:37,576 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
+2026-07-10 22:03:39,205 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 22:03:39,205 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
+2026-07-10 22:03:40,884 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 22:03:40,884 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
+2026-07-10 22:03:42,548 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 22:03:42,548 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
+2026-07-10 22:03:44,388 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 22:03:44,389 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
+2026-07-10 22:03:46,797 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 22:03:46,798 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
+2026-07-10 22:03:48,274 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 22:03:48,274 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
+2026-07-10 22:03:51,180 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 22:03:51,181 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
+2026-07-10 22:03:53,243 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 22:03:53,244 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
+2026-07-10 22:03:56,460 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 22:03:56,461 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
+2026-07-10 22:03:57,624 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 22:03:57,625 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
+2026-07-10 22:04:00,102 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 22:04:00,103 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
+2026-07-10 22:04:02,773 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 22:04:02,773 [INFO] app.services.agent: Routing disabled (Baseline Mode). Escalating directly to remote API.
+2026-07-10 22:04:07,329 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
