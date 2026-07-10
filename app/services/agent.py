@@ -134,6 +134,16 @@ class AgentService:
         """
         Orchestrates the dynamic Confidence-Cascaded Speculative Routing pipeline.
         """
+        # Check for environment variable bypass (Baseline/No improvement mode)
+        disable_routing = os.getenv("DISABLE_ROUTING", "False").lower() == "true"
+        if disable_routing:
+            logger.info("Routing disabled (Baseline Mode). Escalating directly to remote API.")
+            task_type = self.classify_task(prompt)
+            remote_model = self.select_remote_model(task_type)
+            # Baseline does NOT compress the prompt or strip comments, send original prompt
+            remote_response = self.generate_remote(prompt, model=remote_model)
+            return remote_response
+
         # 1. Local Cache Lookup
         if prompt in self.cache:
             logger.info("Cache hit! Returning cached answer.")
