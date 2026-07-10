@@ -14,6 +14,12 @@ from app.services import SelfCheckService
 from app.services.agent import AgentService
 
 def main() -> None:
+    import logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        stream=sys.stderr
+    )
     print("Initializing Velora AI Agent with Speculative Routing...")
     
     # Load configuration

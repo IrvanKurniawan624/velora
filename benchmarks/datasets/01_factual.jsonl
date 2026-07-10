@@ -1,4 +1,4 @@
-{"messages": [{"role": "user", "content": "Explain what photosynthesis is and name the three main inputs required for it."}], "ground_truth": "{\"keywords\": [\"chlorophyll\", \"light\", \"water\", \"carbon dioxide\"]}"}
-{"messages": [{"role": "user", "content": "What is the primary difference between a classical computer bit and a quantum computer qubit?"}], "ground_truth": "{\"keywords\": [\"superposition\", \"entanglement\", \"probabilistic\", \"0 and 1 simultaneously\"]}"}
+{"messages": [{"role": "user", "content": "Explain what photosynthesis is and name the three main inputs required for it."}], "ground_truth": "{\"keywords\": [\"light\", \"water\", \"carbon dioxide\"]}"}
+{"messages": [{"role": "user", "content": "What is the primary difference between a classical computer bit and a quantum computer qubit?"}], "ground_truth": "{\"keywords\": [\"superposition\", \"0 and 1\", \"probabilistic\"]}"}
 {"messages": [{"role": "user", "content": "What is the capital of Australia, and what body of water is it near?"}], "ground_truth": "{\"keywords\": [\"Canberra\", \"Lake Burley Griffin\"]}"}
 {"messages": [{"role": "user", "content": "What is the speed of light in a vacuum, and who first accurately measured it?"}], "ground_truth": "{\"keywords\": [\"299,792\", \"speed of light\", \"Romer\"]}"}

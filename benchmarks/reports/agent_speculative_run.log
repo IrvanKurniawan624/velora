@@ -1,0 +1,143 @@
+=== STDOUT ===
+Initializing Velora AI Agent with Speculative Routing...
+Found input tasks file: input/tasks.json
+Target output file: /output/results.json
+Loaded 19 tasks.
+[1/19] Processing task factual-01...
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 297 chars.
+[2/19] Processing task factual-02...
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 168 chars.
+[3/19] Processing task factual-03...
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 35 chars.
+[4/19] Processing task math-01...
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 3 chars.
+[5/19] Processing task math-02...
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 3 chars.
+[6/19] Processing task math-03...
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 3 chars.
+[7/19] Processing task sentiment-01...
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 390 chars.
+[8/19] Processing task sentiment-02...
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 238 chars.
+[9/19] Processing task sentiment-03...
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 225 chars.
+[10/19] Processing task summarisation-01...
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 271 chars.
+[11/19] Processing task summarisation-02...
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 316 chars.
+[12/19] Processing task ner-01...
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 87 chars.
+[13/19] Processing task ner-02...
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 119 chars.
+[14/19] Processing task debugging-01...
+Success. Source model: accounts/fireworks/models/kimi-k2p7-code | Answer length: 116 chars.
+[15/19] Processing task debugging-02...
+Success. Source model: accounts/fireworks/models/kimi-k2p7-code | Answer length: 53 chars.
+[16/19] Processing task logic-01...
+Success. Source model: accounts/fireworks/models/kimi-k2p7-code | Answer length: 7 chars.
+[17/19] Processing task logic-02...
+Success. Source model: accounts/fireworks/models/kimi-k2p7-code | Answer length: 3 chars.
+[18/19] Processing task codegen-01...
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 138 chars.
+[19/19] Processing task codegen-02...
+Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 215 chars.
+Successfully wrote results to /output/results.json
+Velora AI Agent execution complete.
+
+=== STDERR ===
+2026-07-10 12:03:28,065 [INFO] app.services.agent: Task classified as: factual
+2026-07-10 12:03:28,070 [INFO] app.services.agent: Prompt compressed. Original: 78 chars -> Compressed: 78 chars.
+2026-07-10 12:03:28,109 [WARNING] app.clients.local_client: Failed to load local model (llama-cpp-python not available or model missing): Failed to load shared library '/app/.venv/lib/python3.12/site-packages/llama_cpp/lib/libllama.so': libgomp.so.1: cannot open shared object file: No such file or directory. Falling back to remote-only.
+2026-07-10 12:03:28,109 [INFO] app.services.agent: Local client generated response. Confidence: 0.00
+2026-07-10 12:03:28,109 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
+2026-07-10 12:03:29,882 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 12:03:29,889 [INFO] app.services.agent: Task classified as: factual
+2026-07-10 12:03:29,889 [INFO] app.services.agent: Prompt compressed. Original: 93 chars -> Compressed: 93 chars.
+2026-07-10 12:03:29,889 [INFO] app.services.agent: Local client generated response. Confidence: 0.00
+2026-07-10 12:03:29,889 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
+2026-07-10 12:03:30,587 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 12:03:30,588 [INFO] app.services.agent: Task classified as: factual
+2026-07-10 12:03:30,588 [INFO] app.services.agent: Prompt compressed. Original: 68 chars -> Compressed: 68 chars.
+2026-07-10 12:03:30,588 [INFO] app.services.agent: Local client generated response. Confidence: 0.00
+2026-07-10 12:03:30,588 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
+2026-07-10 12:03:31,330 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 12:03:31,330 [INFO] app.services.agent: Task classified as: math
+2026-07-10 12:03:31,331 [INFO] app.services.agent: Prompt compressed. Original: 120 chars -> Compressed: 120 chars.
+2026-07-10 12:03:31,331 [INFO] app.services.agent: Local client generated response. Confidence: 0.00
+2026-07-10 12:03:31,331 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
+2026-07-10 12:03:32,734 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 12:03:32,734 [INFO] app.services.agent: Task classified as: math
+2026-07-10 12:03:32,735 [INFO] app.services.agent: Prompt compressed. Original: 84 chars -> Compressed: 84 chars.
+2026-07-10 12:03:32,735 [INFO] app.services.agent: Local client generated response. Confidence: 0.00
+2026-07-10 12:03:32,735 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
+2026-07-10 12:03:32,971 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 12:03:32,971 [INFO] app.services.agent: Task classified as: math
+2026-07-10 12:03:32,972 [INFO] app.services.agent: Prompt compressed. Original: 92 chars -> Compressed: 92 chars.
+2026-07-10 12:03:32,972 [INFO] app.services.agent: Local client generated response. Confidence: 0.00
+2026-07-10 12:03:32,972 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
+2026-07-10 12:03:33,495 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 12:03:33,496 [INFO] app.services.agent: Task classified as: sentiment
+2026-07-10 12:03:33,496 [INFO] app.services.agent: Prompt compressed. Original: 236 chars -> Compressed: 162 chars.
+2026-07-10 12:03:33,496 [INFO] app.services.agent: Local client generated response. Confidence: 0.00
+2026-07-10 12:03:33,496 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
+2026-07-10 12:03:37,306 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 12:03:37,307 [INFO] app.services.agent: Task classified as: sentiment
+2026-07-10 12:03:37,307 [INFO] app.services.agent: Prompt compressed. Original: 240 chars -> Compressed: 166 chars.
+2026-07-10 12:03:37,307 [INFO] app.services.agent: Local client generated response. Confidence: 0.00
+2026-07-10 12:03:37,307 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
+2026-07-10 12:03:38,345 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 12:03:38,345 [INFO] app.services.agent: Task classified as: sentiment
+2026-07-10 12:03:38,346 [INFO] app.services.agent: Prompt compressed. Original: 162 chars -> Compressed: 136 chars.
+2026-07-10 12:03:38,346 [INFO] app.services.agent: Local client generated response. Confidence: 0.00
+2026-07-10 12:03:38,346 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
+2026-07-10 12:03:39,686 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 12:03:39,687 [INFO] app.services.agent: Task classified as: summarise
+2026-07-10 12:03:39,687 [INFO] app.services.agent: Prompt compressed. Original: 428 chars -> Compressed: 350 chars.
+2026-07-10 12:03:39,687 [INFO] app.services.agent: Local client generated response. Confidence: 0.00
+2026-07-10 12:03:39,687 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
+2026-07-10 12:03:40,573 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 12:03:40,574 [INFO] app.services.agent: Task classified as: summarise
+2026-07-10 12:03:40,574 [INFO] app.services.agent: Prompt compressed. Original: 427 chars -> Compressed: 349 chars.
+2026-07-10 12:03:40,574 [INFO] app.services.agent: Local client generated response. Confidence: 0.00
+2026-07-10 12:03:40,574 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
+2026-07-10 12:03:41,368 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 12:03:41,369 [INFO] app.services.agent: Task classified as: ner
+2026-07-10 12:03:41,369 [INFO] app.services.agent: Prompt compressed. Original: 194 chars -> Compressed: 128 chars.
+2026-07-10 12:03:41,369 [INFO] app.services.agent: Local client generated response. Confidence: 0.00
+2026-07-10 12:03:41,369 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
+2026-07-10 12:03:42,258 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 12:03:42,258 [INFO] app.services.agent: Task classified as: ner
+2026-07-10 12:03:42,258 [INFO] app.services.agent: Prompt compressed. Original: 224 chars -> Compressed: 224 chars.
+2026-07-10 12:03:42,258 [INFO] app.services.agent: Local client generated response. Confidence: 0.00
+2026-07-10 12:03:42,258 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
+2026-07-10 12:03:43,442 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 12:03:43,443 [INFO] app.services.agent: Task classified as: code
+2026-07-10 12:03:43,443 [INFO] app.services.agent: Prompt compressed. Original: 319 chars -> Compressed: 168 chars.
+2026-07-10 12:03:43,444 [INFO] app.services.agent: Local client generated response. Confidence: 0.00
+2026-07-10 12:03:43,444 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/kimi-k2p7-code
+2026-07-10 12:03:48,302 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 12:03:48,303 [INFO] app.services.agent: Task classified as: code
+2026-07-10 12:03:48,303 [INFO] app.services.agent: Prompt compressed. Original: 170 chars -> Compressed: 137 chars.
+2026-07-10 12:03:48,303 [INFO] app.services.agent: Local client generated response. Confidence: 0.00
+2026-07-10 12:03:48,303 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/kimi-k2p7-code
+2026-07-10 12:03:49,332 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 12:03:49,333 [INFO] app.services.agent: Task classified as: logic
+2026-07-10 12:03:49,333 [INFO] app.services.agent: Prompt compressed. Original: 151 chars -> Compressed: 146 chars.
+2026-07-10 12:03:49,333 [INFO] app.services.agent: Local client generated response. Confidence: 0.00
+2026-07-10 12:03:49,333 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/kimi-k2p7-code
+2026-07-10 12:03:50,690 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 12:03:50,691 [INFO] app.services.agent: Task classified as: logic
+2026-07-10 12:03:50,691 [INFO] app.services.agent: Prompt compressed. Original: 161 chars -> Compressed: 113 chars.
+2026-07-10 12:03:50,691 [INFO] app.services.agent: Local client generated response. Confidence: 0.00
+2026-07-10 12:03:50,691 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/kimi-k2p7-code
+2026-07-10 12:03:57,116 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 12:03:57,117 [INFO] app.services.agent: Task classified as: factual
+2026-07-10 12:03:57,117 [INFO] app.services.agent: Prompt compressed. Original: 219 chars -> Compressed: 97 chars.
+2026-07-10 12:03:57,117 [INFO] app.services.agent: Local client generated response. Confidence: 0.00
+2026-07-10 12:03:57,117 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
+2026-07-10 12:03:57,627 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-10 12:03:57,627 [INFO] app.services.agent: Task classified as: factual
+2026-07-10 12:03:57,627 [INFO] app.services.agent: Prompt compressed. Original: 182 chars -> Compressed: 182 chars.
+2026-07-10 12:03:57,628 [INFO] app.services.agent: Local client generated response. Confidence: 0.00
+2026-07-10 12:03:57,628 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
+2026-07-10 12:04:00,315 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"

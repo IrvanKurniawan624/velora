@@ -159,14 +159,14 @@ class AgentService:
         logger.info(f"Prompt compressed. Original: {len(prompt)} chars -> Compressed: {len(compressed_prompt)} chars.")
         
         # 3. Define confidence thresholds
-        # Complex tasks require extremely high certainty (95%), simple tasks are fine with 85%
-        confidence_threshold = 0.95 if task_type in ["code", "logic"] else 0.85
+        # Code/logic tasks lowered to 0.90 to reduce unnecessary remote escalations
+        confidence_threshold = 0.90 if task_type in ["code", "logic"] else 0.85
         
         # 4. Attempt local generation
         local_response = None
         try:
-            # We constrain output max_tokens based on task type to minimize yapping
-            max_tokens = 512 if task_type in ["code", "logic"] else 256
+            # Code tasks need higher token budgets to avoid truncated function bodies
+            max_tokens = 1024 if task_type == "code" else 512 if task_type == "logic" else 256
             local_response = self.local_client.generate(compressed_prompt, max_tokens=max_tokens)
             logger.info(f"Local client generated response. Confidence: {local_response.confidence:.2f}")
         except Exception as e:
