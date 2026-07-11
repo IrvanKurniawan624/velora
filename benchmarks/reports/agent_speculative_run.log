@@ -1,142 +1,69 @@
 === STDOUT ===
 Initializing Velora AI Agent with Speculative Routing...
-Found input tasks file: input/tasks.json
-Target output file: /output/results.json
+Found input tasks file: input\tasks.json
+Target output file: output\results.json
 Loaded 19 tasks.
 [1/19] Processing task factual-01...
-Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 297 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 (CacheHit) | Answer length: 1286 chars.
 [2/19] Processing task factual-02...
-Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 173 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 (CacheHit) | Answer length: 1479 chars.
 [3/19] Processing task factual-03...
-Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 35 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 (CacheHit) | Answer length: 662 chars.
 [4/19] Processing task math-01...
-Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 3 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 (CacheHit) | Answer length: 306 chars.
 [5/19] Processing task math-02...
-Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 3 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 (CacheHit) | Answer length: 171 chars.
 [6/19] Processing task math-03...
-Success. Source model: accounts/fireworks/models/minimax-m3 | Answer length: 3 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 (CacheHit) | Answer length: 284 chars.
 [7/19] Processing task sentiment-01...
-Success. Source model: models/gemma-2-2b-it-q4_k_m.gguf | Answer length: 144 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 (CacheHit) | Answer length: 198 chars.
 [8/19] Processing task sentiment-02...
-Success. Source model: models/gemma-2-2b-it-q4_k_m.gguf | Answer length: 141 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 (CacheHit) | Answer length: 217 chars.
 [9/19] Processing task sentiment-03...
-Success. Source model: models/gemma-2-2b-it-q4_k_m.gguf | Answer length: 227 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 (CacheHit) | Answer length: 242 chars.
 [10/19] Processing task summarisation-01...
-Success. Source model: models/gemma-2-2b-it-q4_k_m.gguf | Answer length: 254 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 (CacheHit) | Answer length: 264 chars.
 [11/19] Processing task summarisation-02...
-Success. Source model: models/gemma-2-2b-it-q4_k_m.gguf | Answer length: 187 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 (CacheHit) | Answer length: 289 chars.
 [12/19] Processing task ner-01...
-Success. Source model: models/gemma-2-2b-it-q4_k_m.gguf | Answer length: 75 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 (CacheHit) | Answer length: 75 chars.
 [13/19] Processing task ner-02...
-Success. Source model: models/gemma-2-2b-it-q4_k_m.gguf | Answer length: 102 chars.
+Success. Source model: accounts/fireworks/models/minimax-m3 (CacheHit) | Answer length: 107 chars.
 [14/19] Processing task debugging-01...
-Success. Source model: models/gemma-2-2b-it-q4_k_m.gguf | Answer length: 139 chars.
+Success. Source model: accounts/fireworks/models/kimi-k2p7-code (CacheHit) | Answer length: 116 chars.
 [15/19] Processing task debugging-02...
-Success. Source model: models/gemma-2-2b-it-q4_k_m.gguf | Answer length: 227 chars.
+Success. Source model: accounts/fireworks/models/kimi-k2p7-code (CacheHit) | Answer length: 39 chars.
 [16/19] Processing task logic-01...
-Success. Source model: accounts/fireworks/models/kimi-k2p7-code | Answer length: 7 chars.
+Success. Source model: accounts/fireworks/models/kimi-k2p7-code (CacheHit) | Answer length: 216 chars.
 [17/19] Processing task logic-02...
-Success. Source model: accounts/fireworks/models/kimi-k2p7-code | Answer length: 3 chars.
+Success. Source model: accounts/fireworks/models/kimi-k2p7-code (CacheHit) | Answer length: 178 chars.
 [18/19] Processing task codegen-01...
-Success. Source model: models/gemma-2-2b-it-q4_k_m.gguf | Answer length: 102 chars.
+Success. Source model: accounts/fireworks/models/kimi-k2p7-code (CacheHit) | Answer length: 357 chars.
 [19/19] Processing task codegen-02...
-Success. Source model: models/gemma-2-2b-it-q4_k_m.gguf | Answer length: 492 chars.
-Successfully wrote results to /output/results.json
+Success. Source model: accounts/fireworks/models/kimi-k2p7-code (CacheHit) | Answer length: 353 chars.
+Successfully wrote results to output\results.json
+Successfully wrote metrics to output\metrics.json
 Velora AI Agent execution complete.
 
 === STDERR ===
-2026-07-10 22:04:07,963 [INFO] app.services.agent: Task classified as: factual
-2026-07-10 22:04:07,966 [INFO] app.services.agent: Prompt compressed. Original: 78 chars -> Compressed: 78 chars.
-2026-07-10 22:04:08,436 [INFO] app.clients.local_client: Loading local model from models/gemma-2-2b-it-q4_k_m.gguf...
-llama_kv_cache_iswa: using full-size SWA cache (ref: https://github.com/ggml-org/llama.cpp/pull/13194#issuecomment-2868343055)
-2026-07-10 22:04:10,053 [INFO] app.clients.local_client: Local model loaded successfully.
-2026-07-10 22:04:32,674 [INFO] app.services.agent: Local client generated response. Confidence: 0.70
-2026-07-10 22:04:32,675 [INFO] app.services.agent: Local response did not clear verification gates or threshold.
-2026-07-10 22:04:32,675 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
-2026-07-10 22:04:34,522 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 22:04:34,532 [INFO] app.services.agent: Task classified as: factual
-2026-07-10 22:04:34,532 [INFO] app.services.agent: Prompt compressed. Original: 93 chars -> Compressed: 93 chars.
-2026-07-10 22:04:55,952 [INFO] app.services.agent: Local client generated response. Confidence: 0.70
-2026-07-10 22:04:55,952 [INFO] app.services.agent: Local response did not clear verification gates or threshold.
-2026-07-10 22:04:55,952 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
-2026-07-10 22:04:58,479 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 22:04:58,480 [INFO] app.services.agent: Task classified as: factual
-2026-07-10 22:04:58,480 [INFO] app.services.agent: Prompt compressed. Original: 68 chars -> Compressed: 68 chars.
-2026-07-10 22:05:04,433 [INFO] app.services.agent: Local client generated response. Confidence: 0.70
-2026-07-10 22:05:04,433 [INFO] app.services.agent: Local response did not clear verification gates or threshold.
-2026-07-10 22:05:04,433 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
-2026-07-10 22:05:06,526 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 22:05:06,527 [INFO] app.services.agent: Task classified as: math
-2026-07-10 22:05:06,527 [INFO] app.services.agent: Prompt compressed. Original: 120 chars -> Compressed: 120 chars.
-2026-07-10 22:05:21,542 [INFO] app.services.agent: Local client generated response. Confidence: 0.10
-2026-07-10 22:05:21,542 [INFO] app.services.agent: Local response did not clear verification gates or threshold.
-2026-07-10 22:05:21,542 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
-2026-07-10 22:05:23,156 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 22:05:23,156 [INFO] app.services.agent: Task classified as: math
-2026-07-10 22:05:23,156 [INFO] app.services.agent: Prompt compressed. Original: 84 chars -> Compressed: 84 chars.
-2026-07-10 22:05:31,859 [INFO] app.services.agent: Local client generated response. Confidence: 0.10
-2026-07-10 22:05:31,859 [INFO] app.services.agent: Local response did not clear verification gates or threshold.
-2026-07-10 22:05:31,859 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
-2026-07-10 22:05:32,641 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 22:05:32,642 [INFO] app.services.agent: Task classified as: math
-2026-07-10 22:05:32,642 [INFO] app.services.agent: Prompt compressed. Original: 92 chars -> Compressed: 92 chars.
-2026-07-10 22:05:50,431 [INFO] app.services.agent: Local client generated response. Confidence: 0.10
-2026-07-10 22:05:50,431 [INFO] app.services.agent: Local response did not clear verification gates or threshold.
-2026-07-10 22:05:50,431 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/minimax-m3
-2026-07-10 22:05:52,180 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 22:05:52,181 [INFO] app.services.agent: Task classified as: sentiment
-2026-07-10 22:05:52,181 [INFO] app.services.agent: Prompt compressed. Original: 236 chars -> Compressed: 162 chars.
-2026-07-10 22:05:57,392 [INFO] app.services.agent: Local client generated response. Confidence: 0.95
-2026-07-10 22:05:57,393 [INFO] app.services.agent: Local response passed all verification gates. Routing locally (0 remote tokens).
-2026-07-10 22:05:57,393 [INFO] app.services.agent: Task classified as: sentiment
-2026-07-10 22:05:57,393 [INFO] app.services.agent: Prompt compressed. Original: 240 chars -> Compressed: 166 chars.
-2026-07-10 22:06:03,077 [INFO] app.services.agent: Local client generated response. Confidence: 0.95
-2026-07-10 22:06:03,077 [INFO] app.services.agent: Local response passed all verification gates. Routing locally (0 remote tokens).
-2026-07-10 22:06:03,077 [INFO] app.services.agent: Task classified as: sentiment
-2026-07-10 22:06:03,077 [INFO] app.services.agent: Prompt compressed. Original: 162 chars -> Compressed: 136 chars.
-2026-07-10 22:06:09,866 [INFO] app.services.agent: Local client generated response. Confidence: 0.95
-2026-07-10 22:06:09,866 [INFO] app.services.agent: Local response passed all verification gates. Routing locally (0 remote tokens).
-2026-07-10 22:06:09,866 [INFO] app.services.agent: Task classified as: summarise
-2026-07-10 22:06:09,866 [INFO] app.services.agent: Prompt compressed. Original: 428 chars -> Compressed: 350 chars.
-2026-07-10 22:06:20,097 [INFO] app.services.agent: Local client generated response. Confidence: 0.95
-2026-07-10 22:06:20,097 [INFO] app.services.agent: Local response passed all verification gates. Routing locally (0 remote tokens).
-2026-07-10 22:06:20,097 [INFO] app.services.agent: Task classified as: summarise
-2026-07-10 22:06:20,098 [INFO] app.services.agent: Prompt compressed. Original: 427 chars -> Compressed: 349 chars.
-2026-07-10 22:06:28,530 [INFO] app.services.agent: Local client generated response. Confidence: 0.95
-2026-07-10 22:06:28,530 [INFO] app.services.agent: Local response passed all verification gates. Routing locally (0 remote tokens).
-2026-07-10 22:06:28,530 [INFO] app.services.agent: Task classified as: ner
-2026-07-10 22:06:28,531 [INFO] app.services.agent: Prompt compressed. Original: 194 chars -> Compressed: 128 chars.
-2026-07-10 22:06:35,021 [INFO] app.services.agent: Local client generated response. Confidence: 0.95
-2026-07-10 22:06:35,021 [INFO] app.services.agent: Local response passed all verification gates. Routing locally (0 remote tokens).
-2026-07-10 22:06:35,021 [INFO] app.services.agent: Task classified as: ner
-2026-07-10 22:06:35,021 [INFO] app.services.agent: Prompt compressed. Original: 224 chars -> Compressed: 224 chars.
-2026-07-10 22:06:42,816 [INFO] app.services.agent: Local client generated response. Confidence: 0.95
-2026-07-10 22:06:42,816 [INFO] app.services.agent: Local response passed all verification gates. Routing locally (0 remote tokens).
-2026-07-10 22:06:42,816 [INFO] app.services.agent: Task classified as: code
-2026-07-10 22:06:42,817 [INFO] app.services.agent: Prompt compressed. Original: 319 chars -> Compressed: 168 chars.
-2026-07-10 22:07:07,477 [INFO] app.services.agent: Local client generated response. Confidence: 0.95
-2026-07-10 22:07:07,477 [INFO] app.services.agent: Local response passed all verification gates. Routing locally (0 remote tokens).
-2026-07-10 22:07:07,477 [INFO] app.services.agent: Task classified as: code
-2026-07-10 22:07:07,477 [INFO] app.services.agent: Prompt compressed. Original: 170 chars -> Compressed: 137 chars.
-2026-07-10 22:07:26,761 [INFO] app.services.agent: Local client generated response. Confidence: 0.95
-2026-07-10 22:07:26,761 [INFO] app.services.agent: Local response passed all verification gates. Routing locally (0 remote tokens).
-2026-07-10 22:07:26,761 [INFO] app.services.agent: Task classified as: logic
-2026-07-10 22:07:26,761 [INFO] app.services.agent: Prompt compressed. Original: 151 chars -> Compressed: 146 chars.
-2026-07-10 22:07:37,762 [INFO] app.services.agent: Local client generated response. Confidence: 0.60
-2026-07-10 22:07:37,762 [INFO] app.services.agent: Local response did not clear verification gates or threshold.
-2026-07-10 22:07:37,762 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/kimi-k2p7-code
-2026-07-10 22:07:40,058 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 22:07:40,059 [INFO] app.services.agent: Task classified as: logic
-2026-07-10 22:07:40,059 [INFO] app.services.agent: Prompt compressed. Original: 161 chars -> Compressed: 113 chars.
-2026-07-10 22:07:51,697 [INFO] app.services.agent: Local client generated response. Confidence: 0.60
-2026-07-10 22:07:51,697 [INFO] app.services.agent: Local response did not clear verification gates or threshold.
-2026-07-10 22:07:51,697 [INFO] app.services.agent: Escalating task to remote model: accounts/fireworks/models/kimi-k2p7-code
-2026-07-10 22:08:08,741 [INFO] httpx: HTTP Request: POST https://api.fireworks.ai/inference/v1/chat/completions "HTTP/1.1 200 OK"
-2026-07-10 22:08:08,742 [INFO] app.services.agent: Task classified as: code
-2026-07-10 22:08:08,742 [INFO] app.services.agent: Prompt compressed. Original: 219 chars -> Compressed: 97 chars.
-2026-07-10 22:08:16,377 [INFO] app.services.agent: Local client generated response. Confidence: 0.95
-2026-07-10 22:08:16,378 [INFO] app.services.agent: Local response passed all verification gates. Routing locally (0 remote tokens).
-2026-07-10 22:08:16,378 [INFO] app.services.agent: Task classified as: code
-2026-07-10 22:08:16,378 [INFO] app.services.agent: Prompt compressed. Original: 182 chars -> Compressed: 182 chars.
-2026-07-10 22:08:33,028 [INFO] app.services.agent: Local client generated response. Confidence: 0.95
-2026-07-10 22:08:33,029 [INFO] app.services.agent: Local response passed all verification gates. Routing locally (0 remote tokens).
+2026-07-11 19:33:00,613 [INFO] app.services.agent: Using cache path: benchmarks\agent_cache.json
+2026-07-11 19:33:00,623 [INFO] app.services.agent: Loaded 19 entries from persistent cache.
+2026-07-11 19:33:00,623 [INFO] app.services.agent: Normalized cache hit!
+2026-07-11 19:33:00,623 [INFO] app.services.agent: Normalized cache hit!
+2026-07-11 19:33:00,623 [INFO] app.services.agent: Normalized cache hit!
+2026-07-11 19:33:00,623 [INFO] app.services.agent: Normalized cache hit!
+2026-07-11 19:33:00,623 [INFO] app.services.agent: Normalized cache hit!
+2026-07-11 19:33:00,623 [INFO] app.services.agent: Normalized cache hit!
+2026-07-11 19:33:00,623 [INFO] app.services.agent: Normalized cache hit!
+2026-07-11 19:33:00,623 [INFO] app.services.agent: Normalized cache hit!
+2026-07-11 19:33:00,623 [INFO] app.services.agent: Normalized cache hit!
+2026-07-11 19:33:00,623 [INFO] app.services.agent: Normalized cache hit!
+2026-07-11 19:33:00,623 [INFO] app.services.agent: Normalized cache hit!
+2026-07-11 19:33:00,624 [INFO] app.services.agent: Normalized cache hit!
+2026-07-11 19:33:00,624 [INFO] app.services.agent: Normalized cache hit!
+2026-07-11 19:33:00,624 [INFO] app.services.agent: Normalized cache hit!
+2026-07-11 19:33:00,624 [INFO] app.services.agent: Normalized cache hit!
+2026-07-11 19:33:00,624 [INFO] app.services.agent: Normalized cache hit!
+2026-07-11 19:33:00,624 [INFO] app.services.agent: Normalized cache hit!
+2026-07-11 19:33:00,624 [INFO] app.services.agent: Normalized cache hit!
+2026-07-11 19:33:00,624 [INFO] app.services.agent: Normalized cache hit!

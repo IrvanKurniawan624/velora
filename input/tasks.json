@@ -1,78 +1,42 @@
 [
   {
-    "task_id": "factual-01",
-    "prompt": "Explain what photosynthesis is and name the three main inputs required for it."
+    "task_id": "T01",
+    "prompt": "Name the three primary colors in the RGB color model and briefly explain why displays use RGB instead of RYB."
   },
   {
-    "task_id": "factual-02",
-    "prompt": "What is the primary difference between a classical computer bit and a quantum computer qubit?"
+    "task_id": "T01b",
+    "prompt": "What is the difference between machine learning and deep learning? Briefly explain how each works."
   },
   {
-    "task_id": "factual-03",
-    "prompt": "What is the capital of Australia, and what body of water is it near?"
+    "task_id": "T01c",
+    "prompt": "Explain the difference between RAM and ROM in a computer. What is each type used for?"
   },
   {
-    "task_id": "math-01",
-    "prompt": "A farmer has 150 apples. He sells 20% of them on Monday, and then 15 more on Tuesday. How many apples does he have left?"
+    "task_id": "T02",
+    "prompt": "A warehouse starts with 2,400 units. In Q1 it sells 37% of stock. In Q2 it restocks 800 units. In Q3 it sells 640 units. How many units remain at the end of Q3?"
   },
   {
-    "task_id": "math-02",
-    "prompt": "If a train travels at 60 miles per hour for 2.5 hours, how many miles does it cover?"
+    "task_id": "T02b",
+    "prompt": "A recipe requires 3/4 cup of sugar for 12 cookies. How much sugar is needed for 30 cookies? If sugar costs .40 per cup, what is the total cost of sugar for 30 cookies?"
   },
   {
-    "task_id": "math-03",
-    "prompt": "A store has 240 items. It sells 15% on Monday and 60 more on Tuesday. How many items remain?"
+    "task_id": "T03",
+    "prompt": "Classify the sentiment of this customer review as Positive, Negative, or Neutral and give a one-sentence reason: 'The product arrived two days late and the packaging was damaged, but the item worked perfectly and customer support resolved my complaint within an hour.'"
   },
   {
-    "task_id": "sentiment-01",
-    "prompt": "Classify the sentiment of the following product review as positive, negative, or neutral, and provide a short reason. Review: 'The vacuum cleaner is powerful but it is too loud.' Return strictly JSON with keys: 'sentiment' and 'reason'."
+    "task_id": "T03b",
+    "prompt": "Classify the sentiment of this tweet as Positive, Negative, or Neutral and give a one-sentence reason: 'Just got my order. Box was dented and the manual was missing, but honestly the device itself is flawless and set up in under 5 minutes.'"
   },
   {
-    "task_id": "sentiment-02",
-    "prompt": "Classify the sentiment of the following product review as positive, negative, or neutral, and provide a short reason. Review: 'Absolutely love this phone, best purchase of the year!' Return strictly JSON with keys: 'sentiment' and 'reason'."
+    "task_id": "T04",
+    "prompt": "Summarize the following passage in exactly two sentences:\n\n'Machine learning is increasingly deployed in healthcare for diagnosis, treatment planning, and patient monitoring. These systems analyse medical images, predict patient deterioration, and spot patterns in electronic health records that might be missed by human clinicians. However, concerns remain about model interpretability, data privacy, liability when errors occur, and the potential for algorithmic bias to worsen existing healthcare disparities. Regulatory frameworks are still catching up with the pace of deployment, creating uncertainty for healthcare providers and technology developers alike.'"
   },
   {
-    "task_id": "sentiment-03",
-    "prompt": "Classify the sentiment of this review: 'The battery life is great, but the screen scratches too easily.' Return strictly JSON with keys: 'sentiment' and 'reason'."
+    "task_id": "T04b",
+    "prompt": "Summarize the following passage in exactly three bullet points, each no longer than 15 words:\n\n'Remote work has transformed how companies operate globally. Employees gain flexibility and reduced commute times, leading to reported improvements in work-life balance. However, challenges persist around collaboration, company culture, and the blurring of personal and professional boundaries. Organisations are responding by investing in digital collaboration tools and rethinking office space as a hub for social and creative work rather than daily attendance.'"
   },
   {
-    "task_id": "summarisation-01",
-    "prompt": "Summarize the following passage into a JSON format containing a list of 2 key bullet points. Passage: 'Model Context Protocol (MCP) is an open standard that enables developers to build secure, bidirectional connections between AI models and their data sources. It provides a standardized way to expose databases, local files, and APIs to LLMs safely.' Return strictly JSON with a single key 'bullets' which is a list of strings."
-  },
-  {
-    "task_id": "summarisation-02",
-    "prompt": "Summarize the following passage into a JSON format containing a list of 2 key bullet points. Passage: 'Artificial intelligence is transforming industries from healthcare to finance. By automating routine tasks and analyzing vast datasets, AI systems help professionals make more informed decisions, increase productivity, and solve complex problems.' Return strictly JSON with a single key 'bullets' which is a list of strings."
-  },
-  {
-    "task_id": "ner-01",
-    "prompt": "Extract all PERSON, ORG, and LOC entities from the text: 'Elon Musk founded SpaceX in California.' Return strictly a JSON object with keys 'PERSON', 'ORG', and 'LOC' mapping to lists of strings."
-  },
-  {
-    "task_id": "ner-02",
-    "prompt": "Extract all PERSON, ORG, LOC, and DATE entities from the text: 'Maria Sanchez joined Fireworks AI in Berlin last March.' Return strictly a JSON object with keys 'PERSON', 'ORG', 'LOC', and 'DATE' mapping to lists of strings."
-  },
-  {
-    "task_id": "debugging-01",
-    "prompt": "Fix the bugs in this python function. It should return the sum of all even numbers in a list, but it currently returns incorrect results or fails:\n\ndef sum_evens(nums):\n    total = 0\n    for n in nums:\n        if n % 2 == 1:\n            total += n\n    return n\n\nReturn ONLY the corrected python function implementation."
-  },
-  {
-    "task_id": "debugging-02",
-    "prompt": "This function should return the max of a list but has a bug: def get_max(nums): return nums[0]. Find and fix it. Return ONLY the corrected python function implementation."
-  },
-  {
-    "task_id": "logic-01",
-    "prompt": "Solve this logic puzzle: Alice, Bob, and Charlie sit in a row. Alice is not next to Bob. Bob is sitting on the far right. Who is sitting in the middle?"
-  },
-  {
-    "task_id": "logic-02",
-    "prompt": "Solve this logic puzzle: Three friends, Sam, Jo, and Lee, each own a different pet: cat, dog, bird. Sam does not own the bird. Jo owns the dog. Who owns the cat?"
-  },
-  {
-    "task_id": "codegen-01",
-    "prompt": "Write a Python function named `is_palindrome` that takes a string and returns True if it is a palindrome, and False otherwise. Ignore case and non-alphanumeric characters. Return ONLY the python function implementation."
-  },
-  {
-    "task_id": "codegen-02",
-    "prompt": "Write a Python function that takes a list of numbers and returns the second-largest number in the list, handling duplicates correctly. Return ONLY the python function implementation."
+    "task_id": "T05",
+    "prompt": "Extract all named entities from the following text and label each as PERSON, ORGANIZATION, LOCATION, or DATE:\n\n'On March 15 2023, Sundar Pichai announced that Google would open a new AI research lab in Zurich, partnering with ETH Zurich to focus on large language model safety.'"
   }
 ]

@@ -25,6 +25,14 @@ def strip_markdown_fences(text: str) -> str:
     text = re.sub(r'\n?```$', '', text)
     return text.strip()
 
+def write_json_atomically(path: pathlib.Path, data) -> None:
+    """Writes a JSON file atomically using a temporary file and replace."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_suffix(".tmp")
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+    os.replace(tmp_path, path)
+
 def main() -> None:
     import logging
     logging.basicConfig(
@@ -122,22 +130,13 @@ def main() -> None:
             "remote_tokens_used": remote_tokens
         })
         
-    # 5. Write results
-    try:
-        output_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(output_file, "w", encoding="utf-8") as f:
-            json.dump(results, f, indent=2, ensure_ascii=False)
-        print(f"Successfully wrote results to {output_file}")
-        
-        # Write metrics
-        metrics_file = output_file.parent / "metrics.json"
-        with open(metrics_file, "w", encoding="utf-8") as f:
-            json.dump(metrics, f, indent=2, ensure_ascii=False)
-        print(f"Successfully wrote metrics to {metrics_file}")
-    except Exception as e:
-        print(f"Error writing results to output file: {e}", file=sys.stderr)
-        sys.exit(1)
-        
+        # Write results and metrics atomically after every task to protect against timeouts/kills
+        try:
+            write_json_atomically(output_file, results)
+            write_json_atomically(output_file.parent / "metrics.json", metrics)
+        except Exception as e:
+            print(f"Warning: Failed to write intermediate results atomically: {e}", file=sys.stderr)
+            
     print("Velora AI Agent execution complete.")
 
 if __name__ == "__main__":

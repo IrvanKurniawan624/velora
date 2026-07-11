@@ -61,9 +61,13 @@ class AgentService:
             except Exception as e:
                 logger.warning(f"Failed to load persistent cache: {e}")
         
-        # Parse allowed remote models
+        # Parse allowed remote models defensively
         allowed_models_str = os.environ.get("ALLOWED_MODELS", settings.allowed_models)
-        self.allowed_models = [m.strip() for m in allowed_models_str.split(",") if m.strip()]
+        self.allowed_models = []
+        for part in re.split(r"[,;\n]", allowed_models_str or ""):
+            model = part.strip().strip("[]\"' \t")
+            if model:
+                self.allowed_models.append(model)
 
     def normalize_prompt_for_cache(self, prompt: str) -> str:
         """
@@ -76,19 +80,39 @@ class AgentService:
 
     def lookup_fuzzy_cache(self, prompt: str, threshold: float = 0.95) -> ChatResponse:
         """
-        Looks up prompt in persistent cache using normalized exact matching.
+        Looks up prompt in persistent cache using exact normalized and fallback fuzzy matching.
         """
         if not self.cache:
             return None
             
         norm_prompt = self.normalize_prompt_for_cache(prompt)
+        # 1. Try normalized exact match (O(1))
         if norm_prompt in self.normalized_cache:
-            logger.info("Normalized cache hit!")
+            logger.info("Normalized exact cache hit!")
             cached = self.normalized_cache[norm_prompt]
             return ChatResponse(
                 content=cached.content,
                 model=f"{cached.model} (CacheHit)",
                 confidence=cached.confidence,
+                remote_tokens_used=0
+            )
+            
+        # 2. Try fuzzy matching using SequenceMatcher (for minor prompt/filler variations)
+        import difflib
+        best_ratio = 0.0
+        best_cached = None
+        for cached_norm_k, cached_res in self.normalized_cache.items():
+            ratio = difflib.SequenceMatcher(None, norm_prompt, cached_norm_k).ratio()
+            if ratio > best_ratio:
+                best_ratio = ratio
+                best_cached = cached_res
+                
+        if best_ratio >= threshold and best_cached:
+            logger.info(f"Fuzzy cache hit! Similarity: {best_ratio:.2%}")
+            return ChatResponse(
+                content=best_cached.content,
+                model=f"{best_cached.model} (FuzzyCacheHit-{best_ratio:.2f})",
+                confidence=best_cached.confidence,
                 remote_tokens_used=0
             )
             
@@ -205,7 +229,16 @@ class AgentService:
                 temperature=0.1,
                 max_tokens=1024
             )
-            content = response.choices[0].message.content or ""
+            message = response.choices[0].message
+            # Strip inline <think> tags
+            content = re.sub(r"<think>.*?(?:</think>|$)", "", (message.content or ""), flags=re.DOTALL).strip()
+            if not content:
+                reasoning = (getattr(message, "reasoning", None)
+                             or getattr(message, "reasoning_content", None))
+                if reasoning:
+                    lines = [l.strip() for l in str(reasoning).splitlines() if l.strip()]
+                    if lines:
+                        content = lines[-1]
             usage = getattr(response, "usage", None)
             tokens_used = usage.total_tokens if usage else 0
             
@@ -219,13 +252,54 @@ class AgentService:
             logger.error(f"Fireworks API call failed: {e}")
             raise
 
-    def clean_and_extract_content(self, text: str, task_type: str) -> str:
+    def enforce_summarize_constraints(self, text: str, prompt: str) -> str:
+        prompt_lower = prompt.lower()
+        text = text.strip()
+        
+        # 1. Enforce sentence count constraint (e.g. exactly two sentences)
+        if "sentence" in prompt_lower:
+            m_s = re.search(r"(?:exactly\s+|in\s+|at most\s+)?(\d+)\s+sentences", prompt, re.I)
+            n_s = int(m_s.group(1)) if m_s else (1 if "one sentence" in prompt_lower or "single sentence" in prompt_lower else None)
+            if n_s:
+                sentences = re.split(r"(?<=[.!?])\s+", text)
+                sentences = [s.strip() for s in sentences if s.strip()]
+                if len(sentences) > n_s:
+                    text = " ".join(sentences[:n_s])
+        
+        # 2. Enforce bullet count and words per bullet constraint
+        if "bullet" in prompt_lower:
+            lines = [line.strip() for line in text.splitlines() if line.strip()]
+            bullets = []
+            for line in lines:
+                clean_line = re.sub(r"^[-*•+\d.]\s*", "", line).strip()
+                if clean_line:
+                    bullets.append(clean_line)
+            m_b = re.search(r"(?:exactly\s+|in\s+|at most\s+)?(\d+)\s+bullet\s+points", prompt, re.I)
+            n_b = int(m_b.group(1)) if m_b else 3
+            m_w = re.search(r"no\s+longer\s+than\s+(\d+)\s+words", prompt, re.I)
+            n_w = int(m_w.group(1)) if m_w else 15
+            clean_bullets = []
+            for b in bullets:
+                words = b.split()
+                if len(words) > n_w:
+                    b = " ".join(words[:n_w]).rstrip(",;:") + "."
+                clean_bullets.append(b)
+            if len(clean_bullets) > n_b:
+                clean_bullets = clean_bullets[:n_b]
+            text = "\n".join(f"- {b}" for b in clean_bullets)
+        return text
+
+    def clean_and_extract_content(self, text: str, task_type: str, prompt: str = "") -> str:
         """
         Extracts clean code or JSON block from markdown code fences and removes chat chatter.
         """
         text = text.strip()
         if not text:
             return text
+            
+        # Enforce summarisation constraints if prompt is provided
+        if task_type == "summarise" and prompt:
+            text = self.enforce_summarize_constraints(text, prompt)
 
         # If it's a code task
         if task_type == "code":
@@ -318,6 +392,22 @@ class AgentService:
         task_type = self.classify_task(prompt)
         logger.info(f"Task classified as: {task_type}")
         
+        # 2.5 Try Deterministic Solvers (0 tokens, 0 seconds)
+        from app.services.solvers import solve_deterministic
+        solver_res = solve_deterministic(prompt, task_type)
+        if solver_res:
+            answer, confidence = solver_res
+            if confidence >= 0.75:
+                logger.info(f"Task solved deterministically with confidence {confidence}!")
+                res = ChatResponse(
+                    content=self.clean_and_extract_content(answer, task_type, prompt),
+                    model="deterministic_solver",
+                    confidence=confidence,
+                    remote_tokens_used=0
+                )
+                self.save_to_cache(prompt, res)
+                return res
+        
         # Compress prompt using our utility
         from app.utils import compress_prompt
         compressed_prompt = compress_prompt(prompt, task_type)
@@ -325,18 +415,18 @@ class AgentService:
         # Enforce strict anti-yapping formatting for both local and remote tiers to minimize token consumption
         prompt_lower = prompt.lower()
         if task_type == "code":
-            compressed_prompt += "\nReturn ONLY the direct Python code block. No explanations, no comments, no intro/outro, no yapping."
+            compressed_prompt += "\nReturn ONLY Python code block. No comments or explanations."
         elif task_type in ["sentiment", "ner", "summarise"] and "json" in prompt_lower:
-            compressed_prompt += "\nReturn ONLY the raw JSON object. No explanations, no markdown fences, no yapping."
+            compressed_prompt += "\nReturn ONLY raw JSON object. No explanations or markdown fences."
         else:
             # Check if the prompt explicitly asks for explanations/reasons/summaries/labels/details
             needs_explanation = any(k in prompt_lower for k in [
                 "explain", "reason", "why", "describe", "difference", "summarize", "summarise", "summary", "label", "extract", "bullet"
             ])
             if needs_explanation:
-                compressed_prompt += "\nReturn the direct answer containing the requested details, explanation, or reason. No conversational filler, no intro, no yapping."
+                compressed_prompt += "\nReturn direct answer with requested details. No conversational filler or intro."
             else:
-                compressed_prompt += "\nReturn ONLY the direct answer. No intro, no explanations, no yapping."
+                compressed_prompt += "\nReturn ONLY direct answer. No intro or explanations."
             
         logger.info(f"Prompt compressed. Original: {len(prompt)} chars -> Compressed & Formatted: {len(compressed_prompt)} chars.")
 
@@ -346,7 +436,7 @@ class AgentService:
         logger.info(f"Task type '{task_type}' fast-tracked directly to remote model to ensure accuracy.")
         remote_model = self.select_remote_model(task_type)
         remote_response = self.generate_remote(compressed_prompt, model=remote_model)
-        remote_response.content = self.clean_and_extract_content(remote_response.content, task_type)
+        remote_response.content = self.clean_and_extract_content(remote_response.content, task_type, prompt)
         self.save_to_cache(prompt, remote_response)
         return remote_response
 
@@ -365,7 +455,7 @@ class AgentService:
         # 5. Local verification check
         if local_response and local_response.confidence > 0.0:
             # Extract and clean content first so validation runs on clean code/JSON
-            local_response.content = self.clean_and_extract_content(local_response.content, task_type)
+            local_response.content = self.clean_and_extract_content(local_response.content, task_type, prompt)
             local_ok = True
             
             # Refusal check
@@ -404,7 +494,7 @@ class AgentService:
                     )
                     try:
                         corrected_response = self.local_client.generate(correction_prompt, max_tokens=max_tokens, task_type=task_type)
-                        corrected_response.content = self.clean_and_extract_content(corrected_response.content, task_type)
+                        corrected_response.content = self.clean_and_extract_content(corrected_response.content, task_type, prompt)
                         is_valid_corrected, _ = self.self_check.validate_python_syntax(corrected_response.content)
                         if is_valid_corrected and not self.self_check.has_refusal(corrected_response.content):
                             logger.info("Local self-correction succeeded!")
@@ -429,7 +519,7 @@ class AgentService:
         logger.info(f"Escalating task to remote model: {remote_model}")
         
         remote_response = self.generate_remote(compressed_prompt, model=remote_model)
-        remote_response.content = self.clean_and_extract_content(remote_response.content, task_type)
+        remote_response.content = self.clean_and_extract_content(remote_response.content, task_type, prompt)
         
         # Save to cache
         self.save_to_cache(prompt, remote_response)
