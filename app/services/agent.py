@@ -46,12 +46,17 @@ class AgentService:
         
         # Load cache from disk
         self.cache = {}
+        self.normalized_cache = {}
         if self.cache_path.exists():
             try:
                 with open(self.cache_path, "r", encoding="utf-8") as f:
                     raw_cache = json.load(f)
                     for k, v in raw_cache.items():
-                        self.cache[k] = ChatResponse(**v)
+                        resp = ChatResponse(**v)
+                        self.cache[k] = resp
+                        # Populate normalized cache lookup
+                        norm_k = self.normalize_prompt_for_cache(k)
+                        self.normalized_cache[norm_k] = resp
                 logger.info(f"Loaded {len(self.cache)} entries from persistent cache.")
             except Exception as e:
                 logger.warning(f"Failed to load persistent cache: {e}")
@@ -60,42 +65,29 @@ class AgentService:
         allowed_models_str = os.environ.get("ALLOWED_MODELS", settings.allowed_models)
         self.allowed_models = [m.strip() for m in allowed_models_str.split(",") if m.strip()]
 
+    def normalize_prompt_for_cache(self, prompt: str) -> str:
+        """
+        Normalizes prompt to lowercase, strips punctuation, and standardizes spacing to prevent false-positive fuzzy cache mismatches.
+        """
+        p = prompt.strip().lower()
+        p = re.sub(r'[^\w\s]', '', p)
+        p = re.sub(r'\s+', ' ', p)
+        return p
+
     def lookup_fuzzy_cache(self, prompt: str, threshold: float = 0.95) -> ChatResponse:
         """
-        Looks up prompt in persistent fuzzy cache using difflib.SequenceMatcher.
-        Returns ChatResponse copy with 0 remote tokens if match found, else None.
+        Looks up prompt in persistent cache using normalized exact matching.
         """
         if not self.cache:
             return None
             
-        prompt_clean = prompt.strip()
-        
-        # Exact match (fast path)
-        if prompt_clean in self.cache:
-            logger.info("Exact cache hit!")
-            cached = self.cache[prompt_clean]
+        norm_prompt = self.normalize_prompt_for_cache(prompt)
+        if norm_prompt in self.normalized_cache:
+            logger.info("Normalized cache hit!")
+            cached = self.normalized_cache[norm_prompt]
             return ChatResponse(
                 content=cached.content,
                 model=f"{cached.model} (CacheHit)",
-                confidence=cached.confidence,
-                remote_tokens_used=0
-            )
-            
-        best_ratio = 0.0
-        best_key = None
-        
-        for cached_prompt in self.cache.keys():
-            ratio = SequenceMatcher(None, prompt_clean, cached_prompt).ratio()
-            if ratio > best_ratio:
-                best_ratio = ratio
-                best_key = cached_prompt
-                
-        if best_ratio >= threshold:
-            logger.info(f"Fuzzy cache hit! Similarity: {best_ratio:.3f} with key: {best_key[:30]}...")
-            cached = self.cache[best_key]
-            return ChatResponse(
-                content=cached.content,
-                model=f"{cached.model} (FuzzyCache)",
                 confidence=cached.confidence,
                 remote_tokens_used=0
             )
@@ -105,6 +97,8 @@ class AgentService:
     def save_to_cache(self, prompt: str, response: ChatResponse) -> None:
         prompt_clean = prompt.strip()
         self.cache[prompt_clean] = response
+        norm_prompt = self.normalize_prompt_for_cache(prompt)
+        self.normalized_cache[norm_prompt] = response
         try:
             raw_cache = {}
             for k, v in self.cache.items():
