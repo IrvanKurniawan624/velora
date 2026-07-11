@@ -1,2 +1,4 @@
 {"messages": [{"role": "user", "content": "A farmer has 150 apples. He sells 20% of them on Monday, and then 15 more on Tuesday. How many apples does he have left?"}], "ground_truth": "105"}
 {"messages": [{"role": "user", "content": "If a train travels at 60 miles per hour for 2.5 hours, how many miles does it cover?"}], "ground_truth": "150"}
+{"messages": [{"role": "user", "content": "A store has 240 items. It sells 15% on Monday and 60 more on Tuesday. How many items remain?"}], "ground_truth": "144"}
+{"messages": [{"role": "user", "content": "A car rental company charges $30 per day plus $0.15 per mile. If someone rents a car for 3 days and drives 200 miles, what is the total charge?"}], "ground_truth": "120"}

@@ -25,13 +25,14 @@ def test_05_ner(row: EvaluationRow) -> EvaluationRow:
         # Calculate matching entities
         score = 1.0
         reasons = []
-        for key in ["PERSON", "ORG", "LOC"]:
+        keys = list(expected.keys())
+        for key in keys:
             model_entities = [e.lower() for e in data.get(key, [])]
             expected_entities = [e.lower() for e in expected.get(key, [])]
             
             matches = set(model_entities).intersection(set(expected_entities))
             if len(matches) != len(expected_entities):
-                score -= 0.33
+                score -= 1.0 / len(keys)
                 reasons.append(f"Mismatch in {key}")
             else:
                 reasons.append(f"Correct {key}")
