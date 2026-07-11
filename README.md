@@ -18,6 +18,8 @@ On benchmark tasks, it achieves **100.0% overall accuracy** while saving **64.9%
 | `feat/jit-router` | JIT LinUCB adaptive routing | 66.7% | 70.4% | +3.7% | ❌ FAIL | 252.9s | ~0% |
 | `feat/rule-based` | Rule-based local classifier | 63.0% | 63.0% | 0.0% | ❌ FAIL | 258.3s | -8.6% |
 
+![Benchmark Result Graph](docs/img/benchmark_result.png)
+
 ## Core Architecture & Optimizations
 
 1. **Persistent Fuzzy Caching**: Implements `difflib.SequenceMatcher` fuzzy lookup at a `0.95` similarity threshold. Baseline Fireworks answers are stored in `benchmarks/agent_cache.json` via the Docker volume mount, allowing the optimized run to load them instantly (0 remote tokens, 0.59s runtime).
