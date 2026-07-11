@@ -90,4 +90,12 @@ def compress_prompt(prompt: str, task_type: str) -> str:
         pattern = re.compile(re.escape(verbose), re.IGNORECASE)
         compressed = pattern.sub(concise, compressed)
         
-    return compressed.strip()
+    # Generic regex-based verbosity/politeness cleanup
+    # Remove politeness and general intro fillers
+    compressed = re.sub(r"\b(please|kindly|could you|would you mind|write a|solve the following|solve this)\s+", "", compressed, flags=re.IGNORECASE)
+    # Remove standard transition fillers
+    compressed = re.sub(r"\b(the following|of the following|for the following|below)\s+", "", compressed, flags=re.IGNORECASE)
+    # Normalize multiple spaces
+    compressed = re.sub(r"\s+", " ", compressed).strip()
+    
+    return compressed
