@@ -320,16 +320,24 @@ class AgentService:
             compressed_prompt += "\nReturn ONLY the direct answer. No intro, no explanations, no yapping."
             
         logger.info(f"Prompt compressed. Original: {len(prompt)} chars -> Compressed & Formatted: {len(compressed_prompt)} chars.")
-        
-        # 3. Define confidence thresholds
-        # Code/logic tasks lowered to 0.90 to reduce unnecessary remote escalations
-        confidence_threshold = 0.90 if task_type in ["code", "logic"] else 0.85
-        
-        # 4. Attempt local generation
+
+        # 3. Fast-track: skip local entirely for code and logic — Gemma 2B is too slow and
+        # inaccurate for these tasks. Go straight to the best remote model.
+        if task_type in ["code", "logic"]:
+            logger.info(f"Task type '{task_type}' fast-tracked directly to remote model (skipping local).")
+            remote_model = self.select_remote_model(task_type)
+            remote_response = self.generate_remote(compressed_prompt, model=remote_model)
+            remote_response.content = self.clean_and_extract_content(remote_response.content, task_type)
+            self.save_to_cache(prompt, remote_response)
+            return remote_response
+
+        # 4. Define confidence thresholds for remaining local-first task types
+        confidence_threshold = 0.85
+
+        # 5. Attempt local generation
         local_response = None
         try:
-            # Code tasks need higher token budgets to avoid truncated function bodies
-            max_tokens = 1024 if task_type == "code" else 512 if task_type == "logic" else 256
+            max_tokens = 128
             local_response = self.local_client.generate(compressed_prompt, max_tokens=max_tokens, task_type=task_type)
             logger.info(f"Local client generated response. Confidence: {local_response.confidence:.2f}")
         except Exception as e:
