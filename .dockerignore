@@ -8,9 +8,9 @@ ENV/
 
 # Cache and compiled files
 
-**pycache**/
-_.py[cod]
-_$py.class
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
 .pytest_cache/
 .ruff_cache/
 
@@ -31,4 +31,12 @@ docs/
 input/
 output/
 models/
+
+# Agent / dev tooling (not needed at runtime)
+
+.context/
+GEMINI.md
+CLAUDE.md
+AGENTS.md
+synapse.config.json
 
