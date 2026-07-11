@@ -102,7 +102,8 @@ class LocalClient:
         # Construct messages according to Chat Completion format
         messages = []
         if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
+            # Prepend system prompt to user content to prevent Gemma 2 system role crashes
+            prompt = f"{system_prompt}\n\n{prompt}"
         messages.append({"role": "user", "content": prompt})
 
         # Call create_chat_completion without logprobs for speed
