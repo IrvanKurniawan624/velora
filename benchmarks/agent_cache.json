@@ -1,164 +1,116 @@
 {
   "Explain what photosynthesis is and name the three main inputs required for it.": {
-    "content": "# Photosynthesis\n\n**Photosynthesis** is the biological process by which green plants, algae, and certain bacteria convert light energy into chemical energy stored in glucose (a sugar). This process is essential for life on Earth because it produces the oxygen we breathe and forms the foundation of most food chains.\n\nThe overall chemical equation is:\n\n**6CO₂ + 6H₂O + light energy → C₆H₁₂O₆ + 6O₂**\n\n## The Three Main Inputs\n\n1. **Sunlight** ☀️ — Provides the energy needed to drive the reaction. Chlorophyll in plant cells absorbs this light energy.\n\n2. **Water (H₂O)** 💧 — Absorbed through the plant's roots from the soil. It provides the hydrogen atoms used to form glucose.\n\n3. **Carbon Dioxide (CO₂)** 🌫️ — Taken in from the atmosphere through tiny pores in leaves called **stomata**. It provides the carbon atoms that make up the glucose molecule.\n\n## The Outputs\n\n- **Glucose (C₆H₁₂O₆)** — Used by the plant for energy and growth.\n- **Oxygen (O₂)** — Released into the atmosphere as a byproduct.\n\nPhotosynthesis primarily takes place in the **chloroplasts** of plant cells, specifically using the green pigment **chlorophyll**, which gives plants their characteristic color.",
+    "content": "Photosynthesis is the process by which green plants, algae, and some bacteria convert light energy into chemical energy stored in glucose.\n\nThe three main inputs are:\n1. Sunlight (light energy)\n2. Water (H₂O)\n3. Carbon dioxide (CO₂)",
     "model": "accounts/fireworks/models/minimax-m3",
     "confidence": 1.0,
-    "remote_tokens_used": 613
+    "remote_tokens_used": 233
   },
   "What is the primary difference between a classical computer bit and a quantum computer qubit?": {
-    "content": "# Classical Bits vs. Quantum Qubits\n\nThe primary difference lies in **how information is represented and manipulated**:\n\n## Classical Bit\n- Exists in **one of two definite states**: 0 or 1\n- Behaves **deterministically** — you always know its value\n- Like a light switch: either off (0) or on (1)\n\n## Quantum Bit (Qubit)\n- Can exist in a **superposition** of both 0 and 1 simultaneously\n- Represented mathematically as: |ψ⟩ = α|0⟩ + β|1⟩, where α and β are probability amplitudes\n- Behaves **probabilistically** — measurement yields 0 with probability |α|² and 1 with probability |β|²\n- Like a spinning coin: it's neither heads nor tails until it lands\n\n## Key Implications\n\n| Property | Classical Bit | Qubit |\n|----------|--------------|-------|\n| States | 0 or 1 | Superposition of 0 and 1 |\n| Measurement | Reveals current state | Collapses superposition |\n| Combination | Independent | Can be **entangled** with other qubits |\n| Scaling | n bits = n values | n qubits = 2ⁿ simultaneous states |\n\n## Why It Matters\n\nThis difference enables two powerful quantum phenomena:\n\n1. **Superposition** — A qubit can explore multiple computational paths simultaneously, enabling massive parallelism.\n\n2. **Entanglement** — Qubits can be correlated in ways that have no classical equivalent, allowing coordinated behavior that classical bits cannot replicate.\n\nThese properties are what allow quantum computers to potentially solve certain problems (like factoring large numbers via Shor's algorithm or simulating quantum systems) exponentially faster than classical computers — though only for specific problem types, not general-purpose computing.\n\n**Important caveat:** Once you measure a qubit, it collapses to a classical 0 or 1, so quantum computers don't simply \"try all answers at once\" — they exploit interference patterns to amplify correct answers and cancel incorrect ones.",
+    "content": "A classical bit is binary and can only be in one of two definite states (0 or 1) at a time, while a qubit can exist in a superposition of both states simultaneously. (Quantum computing is probabilistic) (qubits represent states beyond classical 0 and 1 superposition)",
     "model": "accounts/fireworks/models/minimax-m3",
     "confidence": 1.0,
-    "remote_tokens_used": 688
+    "remote_tokens_used": 219
   },
   "What is the capital of Australia, and what body of water is it near?": {
-    "content": "The capital of Australia is **Canberra**, located in the Australian Capital Territory (ACT). \n\nCanberra is situated around **Lake Burley Griffin**, an artificial lake in the heart of the city that was created in 1963 by damming the Molonglo River. The lake is a central feature of the city, with many of Canberra's notable landmarks (such as the Parliament House, the National Gallery, and the Australian War Memorial) located along its shores.\n\nWhile Canberra is an inland city (about 150 km from the coast), the nearby **Tasman Sea** and **Burrinjuck Dam** (on the Murrumbidgee River) are also significant bodies of water in the broader region.",
+    "content": "Canberra, near Lake Burley Griffin.",
     "model": "accounts/fireworks/models/minimax-m3",
     "confidence": 1.0,
-    "remote_tokens_used": 399
-  },
-  "What is the speed of light in a vacuum, and who first accurately measured it?": {
-    "content": "# The Speed of Light\n\nThe speed of light in a vacuum is **exactly 299,792,458 meters per second** (approximately 186,282 miles per second, or about 671 million mph).\n\nSince 1983, this value has been *defined* as a constant rather than measured—the meter itself is now defined as the distance light travels in 1/299,792,458 of a second.\n\n## History of Measurement\n\nSeveral scientists contributed key measurements:\n\n**Ole Romer (1676)** — Danish astronomer who provided the first quantitative evidence that light travels at a finite speed. By observing timing variations in the eclipses of Jupiter's moon Io, he estimated roughly 220,000 km/s (about 26% too low), but correctly demonstrated light's finite velocity.\n\n**James Bradley (1727)** — English astronomer who used stellar aberration to estimate the speed at about 301,000 km/s—remarkably close to the true value.\n\n**Hippolyte Fizeau (1849)** — French physicist who performed the first *terrestrial* measurement using a rotating toothed wheel and a distant mirror, obtaining about 313,000 km/s.\n\n**Léon Foucault (1850)** — Improved Fizeau's method with a rotating mirror, achieving about 298,000 km/s.\n\n**Albert A. Michelson (1879–1926)** — American physicist who refined these measurements over several decades, eventually reaching values within 0.001% of the modern figure. He won the 1907 Nobel Prize in Physics partly for this work.\n\nIf you're asking about the *first* accurate measurement, **Romer** is credited with proving light's finite speed, while **Bradley** produced the first value close to the true one. **Michelson** is often considered to have made the most precise measurements of the pre-modern era.",
-    "model": "accounts/fireworks/models/minimax-m3",
-    "confidence": 1.0,
-    "remote_tokens_used": 891
+    "remote_tokens_used": 268
   },
   "A farmer has 150 apples. He sells 20% of them on Monday, and then 15 more on Tuesday. How many apples does he have left?": {
-    "content": "# Solving the Apple Problem\n\n**Starting amount:** 150 apples\n\n**Monday's sales (20%):**\n$$150 \\times 0.20 = 30 \\text{ apples sold}$$\n\n**Apples remaining after Monday:**\n$$150 - 30 = 120 \\text{ apples}$$\n\n**Tuesday's sales:**\n$$120 - 15 = 105 \\text{ apples}$$\n\n## Answer: The farmer has **105 apples** left.",
+    "content": "105",
     "model": "accounts/fireworks/models/minimax-m3",
     "confidence": 1.0,
-    "remote_tokens_used": 333
+    "remote_tokens_used": 207
   },
   "If a train travels at 60 miles per hour for 2.5 hours, how many miles does it cover?": {
-    "content": "# Distance Calculation\n\nTo find the distance traveled, I'll use the formula:\n\n**Distance = Speed × Time**\n\n## Given Information\n- Speed: 60 miles per hour\n- Time: 2.5 hours\n\n## Calculation\n$$\\text{Distance} = 60 \\text{ mph} \\times 2.5 \\text{ hours} = 150 \\text{ miles}$$\n\n## Answer\nThe train covers **150 miles**.",
+    "content": "150 miles",
     "model": "accounts/fireworks/models/minimax-m3",
-    "confidence": 1.0,
-    "remote_tokens_used": 335
-  },
-  "A store has 240 items. It sells 15% on Monday and 60 more on Tuesday. How many items remain?": {
-    "content": "# Solving the Problem\n\n**Starting amount:** 240 items\n\n## Monday's Sales (15%)\n$$15\\% \\times 240 = 0.15 \\times 240 = 36 \\text{ items}$$\n\n**Remaining after Monday:** 240 − 36 = **204 items**\n\n## Tuesday's Sales (60 items)\n$$204 - 60 = 144 \\text{ items}$$\n\n## Answer\n**144 items remain.**",
-    "model": "accounts/fireworks/models/minimax-m3",
-    "confidence": 1.0,
-    "remote_tokens_used": 325
-  },
-  "A car rental company charges $30 per day plus $0.15 per mile. If someone rents a car for 3 days and drives 200 miles, what is the total charge?": {
-    "content": "# Total Rental Charge Calculation\n\n**Daily Charge:**\n$30/day × 3 days = **$90**\n\n**Mileage Charge:**\n$0.15/mile × 200 miles = **$30**\n\n**Total Charge:**\n$90 + $30 = **$120**",
-    "model": "accounts/fireworks/models/minimax-m3",
-    "confidence": 1.0,
-    "remote_tokens_used": 284
-  },
-  "Classify the sentiment of the following product review as positive, negative, or neutral, and provide a short reason. Review: 'The vacuum cleaner is powerful but it is too loud.' Return strictly JSON with keys: 'sentiment' and 'reason'.": {
-    "content": "{\n  \"sentiment\": \"neutral\",\n  \"reason\": \"The review contains both a positive aspect (the vacuum cleaner is powerful) and a negative aspect (it is too loud), resulting in a balanced or mixed sentiment.\"\n}",
-    "model": "accounts/fireworks/models/minimax-m3",
-    "confidence": 1.0,
-    "remote_tokens_used": 548
-  },
-  "Classify the sentiment of the following product review as positive, negative, or neutral, and provide a short reason. Review: 'Absolutely love this phone, best purchase of the year!' Return strictly JSON with keys: 'sentiment' and 'reason'.": {
-    "content": "{\"sentiment\": \"positive\", \"reason\": \"The reviewer expresses strong enthusiasm and satisfaction, using phrases like 'Absolutely love' and 'best purchase of the year,' indicating a highly positive sentiment.\"}",
-    "model": "accounts/fireworks/models/minimax-m3",
-    "confidence": 1.0,
-    "remote_tokens_used": 261
-  },
-  "Classify the sentiment of this review: 'The battery life is great, but the screen scratches too easily.' Return strictly JSON with keys: 'sentiment' and 'reason'.": {
-    "content": "{\n  \"sentiment\": \"mixed\",\n  \"reason\": \"The review contains both positive and negative sentiments. The praise for great battery life is offset by the complaint about the screen scratching too easily, resulting in an overall mixed sentiment.\"\n}",
-    "model": "accounts/fireworks/models/minimax-m3",
-    "confidence": 1.0,
-    "remote_tokens_used": 325
-  },
-  "Classify the sentiment of the following product review as positive, negative, or neutral, and provide a short reason. Review: 'The delivery took two weeks, and the box was damaged.' Return strictly JSON with keys: 'sentiment' and 'reason'.": {
-    "content": "{\n  \"sentiment\": \"negative\",\n  \"reason\": \"The reviewer expresses dissatisfaction with both the slow delivery time (two weeks) and the damaged packaging upon arrival.\"\n}",
-    "model": "accounts/fireworks/models/minimax-m3",
-    "confidence": 1.0,
-    "remote_tokens_used": 274
-  },
-  "Summarize the following passage into a JSON format containing a list of 2 key bullet points. Passage: 'Model Context Protocol (MCP) is an open standard that enables developers to build secure, bidirectional connections between AI models and their data sources. It provides a standardized way to expose databases, local files, and APIs to LLMs safely.' Return strictly JSON with a single key 'bullets' which is a list of strings.": {
-    "content": "{\n  \"bullets\": [\n    \"Model Context Protocol (MCP) is an open standard that enables secure, bidirectional connections between AI models and their data sources.\",\n    \"MCP provides a standardized way to safely expose databases, local files, and APIs to large language models (LLMs).\"\n  ]\n}",
-    "model": "accounts/fireworks/models/minimax-m3",
-    "confidence": 1.0,
-    "remote_tokens_used": 382
-  },
-  "Summarize the following passage into a JSON format containing a list of 2 key bullet points. Passage: 'Artificial intelligence is transforming industries from healthcare to finance. By automating routine tasks and analyzing vast datasets, AI systems help professionals make more informed decisions, increase productivity, and solve complex problems.' Return strictly JSON with a single key 'bullets' which is a list of strings.": {
-    "content": "{\n  \"bullets\": [\n    \"Artificial intelligence is transforming industries across sectors, from healthcare to finance.\",\n    \"AI systems automate routine tasks and analyze vast datasets, enabling professionals to make more informed decisions, increase productivity, and solve complex problems.\"\n  ]\n}",
-    "model": "accounts/fireworks/models/minimax-m3",
-    "confidence": 1.0,
-    "remote_tokens_used": 358
-  },
-  "Summarize the following passage into a JSON format containing a list of 2 key bullet points. Passage: 'Photosynthesis is a process used by plants and other organisms to convert light energy into chemical energy. This chemical energy is stored in carbohydrate molecules, such as sugars, which are synthesized from carbon dioxide and water.' Return strictly JSON with a single key 'bullets' which is a list of strings.": {
-    "content": "{\n  \"bullets\": [\n    \"Photosynthesis is the process by which plants and other organisms convert light energy into chemical energy.\",\n    \"This chemical energy is stored in carbohydrate molecules like sugars, which are synthesized from carbon dioxide and water.\"\n  ]\n}",
-    "model": "accounts/fireworks/models/minimax-m3",
-    "confidence": 1.0,
-    "remote_tokens_used": 346
-  },
-  "Extract all PERSON, ORG, and LOC entities from the text: 'Elon Musk founded SpaceX in California.' Return strictly a JSON object with keys 'PERSON', 'ORG', and 'LOC' mapping to lists of strings.": {
-    "content": "{\n  \"PERSON\": [\"Elon Musk\"],\n  \"ORG\": [\"SpaceX\"],\n  \"LOC\": [\"California\"]\n}",
-    "model": "accounts/fireworks/models/minimax-m3",
-    "confidence": 1.0,
-    "remote_tokens_used": 271
-  },
-  "Extract all PERSON, ORG, LOC, and DATE entities from the text: 'Maria Sanchez joined Fireworks AI in Berlin last March.' Return strictly a JSON object with keys 'PERSON', 'ORG', 'LOC', and 'DATE' mapping to lists of strings.": {
-    "content": "{\n  \"PERSON\": [\"Maria Sanchez\"],\n  \"ORG\": [\"Fireworks AI\"],\n  \"LOC\": [\"Berlin\"],\n  \"DATE\": [\"last March\"]\n}",
-    "model": "accounts/fireworks/models/minimax-m3",
-    "confidence": 1.0,
-    "remote_tokens_used": 295
-  },
-  "Extract all PERSON, ORG, and LOC entities from the text: 'Sundar Pichai is the CEO of Google in Mountain View.' Return strictly a JSON object with keys 'PERSON', 'ORG', and 'LOC' mapping to lists of strings.": {
-    "content": "{\n  \"PERSON\": [\"Sundar Pichai\"],\n  \"ORG\": [\"Google\"],\n  \"LOC\": [\"Mountain View\"]\n}",
-    "model": "accounts/fireworks/models/minimax-m3",
-    "confidence": 1.0,
-    "remote_tokens_used": 299
-  },
-  "Fix the bugs in this python function. It should return the sum of all even numbers in a list, but it currently returns incorrect results or fails:\n\ndef sum_evens(nums):\n    total = 0\n    for n in nums:\n        if n % 2 == 1:\n            total += n\n    return n\n\nReturn ONLY the corrected python function implementation.": {
-    "content": "def sum_evens(nums):\n    total = 0\n    for n in nums:\n        if n % 2 == 0:\n            total += n\n    return total",
-    "model": "accounts/fireworks/models/kimi-k2p7-code",
-    "confidence": 1.0,
-    "remote_tokens_used": 174
-  },
-  "This function should return the max of a list but has a bug: def get_max(nums): return nums[0]. Find and fix it. Return ONLY the corrected python function implementation.": {
-    "content": "def get_max(nums):\n    if not nums:\n        return None\n    max_val = nums[0]\n    for num in nums[1:]:\n        if num > max_val:\n            max_val = num\n    return max_val",
-    "model": "accounts/fireworks/models/kimi-k2p7-code",
-    "confidence": 1.0,
-    "remote_tokens_used": 415
-  },
-  "Fix the bugs in this python function. It should return the factorial of a positive integer, but it currently goes into an infinite loop:\n\ndef factorial(n):\n    if n == 0:\n        return 1\n    return n * factorial(n)\n\nReturn ONLY the corrected python function implementation.": {
-    "content": "def factorial(n):\n    if n == 0:\n        return 1\n    return n * factorial(n - 1)",
-    "model": "accounts/fireworks/models/kimi-k2p7-code",
     "confidence": 1.0,
     "remote_tokens_used": 175
   },
-  "Solve this logic puzzle: Alice, Bob, and Charlie sit in a row. Alice is not next to Bob. Bob is sitting on the far right. Who is sitting in the middle?": {
-    "content": "Bob is on the far right, so the middle seat is next to Bob. Since Alice is **not** next to Bob, Alice cannot be in the middle. Therefore, Alice must be on the far left, and **Charlie is sitting in the middle**.",
+  "A store has 240 items. It sells 15% on Monday and 60 more on Tuesday. How many items remain?": {
+    "content": "144",
+    "model": "accounts/fireworks/models/minimax-m3",
+    "confidence": 1.0,
+    "remote_tokens_used": 227
+  },
+  "Classify the sentiment of the following product review as positive, negative, or neutral, and provide a short reason. Review: 'The vacuum cleaner is powerful but it is too loud.' Return strictly JSON with keys: 'sentiment' and 'reason'.": {
+    "content": "{\"sentiment\": \"negative\", \"reason\": \"The vacuum cleaner is powerful but it is too loud.\"}",
+    "model": "models/gemma-2-2b-it-q4_k_m.gguf",
+    "confidence": 0.95,
+    "remote_tokens_used": 0
+  },
+  "Classify the sentiment of the following product review as positive, negative, or neutral, and provide a short reason. Review: 'Absolutely love this phone, best purchase of the year!' Return strictly JSON with keys: 'sentiment' and 'reason'.": {
+    "content": "{\"sentiment\": \"positive\", \"reason\": \"love this phone, best purchase of the year\"}",
+    "model": "models/gemma-2-2b-it-q4_k_m.gguf",
+    "confidence": 0.95,
+    "remote_tokens_used": 0
+  },
+  "Classify the sentiment of this review: 'The battery life is great, but the screen scratches too easily.' Return strictly JSON with keys: 'sentiment' and 'reason'.": {
+    "content": "{\n\"sentiment\": \"mixed\",\n\"reason\": \"positive battery life, negative screen scratches\"\n}",
+    "model": "models/gemma-2-2b-it-q4_k_m.gguf",
+    "confidence": 0.95,
+    "remote_tokens_used": 0
+  },
+  "Summarize the following passage into a JSON format containing a list of 2 key bullet points. Passage: 'Model Context Protocol (MCP) is an open standard that enables developers to build secure, bidirectional connections between AI models and their data sources. It provides a standardized way to expose databases, local files, and APIs to LLMs safely.' Return strictly JSON with a single key 'bullets' which is a list of strings.": {
+    "content": "{\n  \"bullets\": [\n    \"Enables secure bidirectional connections between AI models and data sources.\",\n    \"Provides a standardized way to expose databases, local files, and APIs to LLMs.\"\n  ]\n}",
+    "model": "models/gemma-2-2b-it-q4_k_m.gguf",
+    "confidence": 0.95,
+    "remote_tokens_used": 0
+  },
+  "Summarize the following passage into a JSON format containing a list of 2 key bullet points. Passage: 'Artificial intelligence is transforming industries from healthcare to finance. By automating routine tasks and analyzing vast datasets, AI systems help professionals make more informed decisions, increase productivity, and solve complex problems.' Return strictly JSON with a single key 'bullets' which is a list of strings.": {
+    "content": "{\n\"bullets\": [\n\"AI automates routine tasks and analyzes vast datasets.\",\n\"AI helps professionals make informed decisions, increase productivity, and solve complex problems.\"\n]\n}",
+    "model": "models/gemma-2-2b-it-q4_k_m.gguf",
+    "confidence": 0.95,
+    "remote_tokens_used": 0
+  },
+  "Extract all PERSON, ORG, and LOC entities from the text: 'Elon Musk founded SpaceX in California.' Return strictly a JSON object with keys 'PERSON', 'ORG', and 'LOC' mapping to lists of strings.": {
+    "content": "{\"PERSON\": [\"Elon Musk\"], \"ORG\": [\"SpaceX\"], \"LOC\": [\"California\"]}",
+    "model": "models/gemma-2-2b-it-q4_k_m.gguf",
+    "confidence": 0.95,
+    "remote_tokens_used": 0
+  },
+  "Extract all PERSON, ORG, LOC, and DATE entities from the text: 'Maria Sanchez joined Fireworks AI in Berlin last March.' Return strictly a JSON object with keys 'PERSON', 'ORG', 'LOC', and 'DATE' mapping to lists of strings.": {
+    "content": "{\n  \"PERSON\": [\"Maria Sanchez\"],\n  \"ORG\": [\"Fireworks AI\"],\n  \"LOC\": [\"Berlin\"],\n  \"DATE\": [\"March\"]\n}",
+    "model": "models/gemma-2-2b-it-q4_k_m.gguf",
+    "confidence": 0.95,
+    "remote_tokens_used": 0
+  },
+  "Fix the bugs in this python function. It should return the sum of all even numbers in a list, but it currently returns incorrect results or fails:\n\ndef sum_evens(nums):\n    total = 0\n    for n in nums:\n        if n % 2 == 1:\n            total += n\n    return n\n\nReturn ONLY the corrected python function implementation.": {
+    "content": "def sum_evens(nums):\n  total = 0\n  for n in nums:\n    if n % 2 == 0:\n      total += n\n  return total",
+    "model": "models/gemma-2-2b-it-q4_k_m.gguf",
+    "confidence": 0.95,
+    "remote_tokens_used": 0
+  },
+  "This function should return the max of a list but has a bug: def get_max(nums): return nums[0]. Find and fix it. Return ONLY the corrected python function implementation.": {
+    "content": "def get_max(nums):\n    return max(nums)",
     "model": "accounts/fireworks/models/kimi-k2p7-code",
     "confidence": 1.0,
-    "remote_tokens_used": 188
+    "remote_tokens_used": 250
+  },
+  "Solve this logic puzzle: Alice, Bob, and Charlie sit in a row. Alice is not next to Bob. Bob is sitting on the far right. Who is sitting in the middle?": {
+    "content": "Charlie",
+    "model": "accounts/fireworks/models/kimi-k2p7-code",
+    "confidence": 1.0,
+    "remote_tokens_used": 166
   },
   "Solve this logic puzzle: Three friends, Sam, Jo, and Lee, each own a different pet: cat, dog, bird. Sam does not own the bird. Jo owns the dog. Who owns the cat?": {
-    "content": "Sam owns the cat.\n\nHere’s why:\n- Jo owns the dog.\n- Sam does not own the bird, and the dog is already taken by Jo.\n- Therefore, Sam must own the cat.\n- That leaves Lee with the bird.",
+    "content": "Sam",
     "model": "accounts/fireworks/models/kimi-k2p7-code",
     "confidence": 1.0,
-    "remote_tokens_used": 178
-  },
-  "Solve this logic puzzle: If John is taller than Mary, and Mary is taller than Alice, is John taller than Alice?": {
-    "content": "Yes, John is taller than Alice.\n\nThis follows from the transitive property of “taller than”:\n\n- John > Mary (in height)\n- Mary > Alice\n\nTherefore, John > Alice.",
-    "model": "accounts/fireworks/models/kimi-k2p7-code",
-    "confidence": 1.0,
-    "remote_tokens_used": 90
+    "remote_tokens_used": 137
   },
   "Write a Python function named `is_palindrome` that takes a string and returns True if it is a palindrome, and False otherwise. Ignore case and non-alphanumeric characters. Return ONLY the python function implementation.": {
-    "content": "def is_palindrome(s):\n    cleaned = ''.join(ch.lower() for ch in s if ch.isalnum())\n    return cleaned == cleaned[::-1]",
-    "model": "accounts/fireworks/models/kimi-k2p7-code",
-    "confidence": 1.0,
-    "remote_tokens_used": 259
+    "content": "def is_palindrome(text):\n  processed_text = ''.join(c for c in text if c.isalnum())\n  return processed_text.lower() == processed_text.lower()[::-1]",
+    "model": "models/gemma-2-2b-it-q4_k_m.gguf",
+    "confidence": 0.95,
+    "remote_tokens_used": 0
   },
   "Write a Python function that takes a list of numbers and returns the second-largest number in the list, handling duplicates correctly. Return ONLY the python function implementation.": {
-    "content": "def second_largest(numbers):\n    largest = float('-inf')\n    second = float('-inf')\n\n    for num in numbers:\n        if num > largest:\n            second = largest\n            largest = num\n        elif largest > num > second:\n            second = num\n\n    return second if second != float('-inf') else None",
-    "model": "accounts/fireworks/models/kimi-k2p7-code",
-    "confidence": 1.0,
-    "remote_tokens_used": 509
-  },
-  "Write a Python function named `is_prime` that takes a positive integer and returns True if it is prime, and False otherwise. Return ONLY the python function implementation.": {
-    "content": "def is_prime(n):\n    if n < 2:\n        return False\n    if n == 2:\n        return True\n    if n % 2 == 0:\n        return False\n    limit = int(n ** 0.5)\n    for i in range(3, limit + 1, 2):\n        if n % i == 0:\n            return False\n    return True",
-    "model": "accounts/fireworks/models/kimi-k2p7-code",
-    "confidence": 1.0,
-    "remote_tokens_used": 610
+    "content": "def second_largest(nums):\n  if len(nums) < 2:\n    return None\n  nums.sort()\n  return nums[-2]",
+    "model": "models/gemma-2-2b-it-q4_k_m.gguf",
+    "confidence": 0.95,
+    "remote_tokens_used": 0
   }
 }

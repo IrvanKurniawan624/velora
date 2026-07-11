@@ -72,21 +72,21 @@ def compress_prompt(prompt: str, task_type: str) -> str:
     # Math: Train travel
     compressed = re.sub(
         r"If a train travels at (\d+) miles per hour for ([\d\.]+) hours, how many miles does it cover\?",
-        r"Train speed: \1 mph, duration: \2 hours. Distance covered?",
+        r"Train speed=\1 mph. Duration=\2 hours. Distance?",
         compressed,
         flags=re.IGNORECASE
     )
     # Math: Store sales
     compressed = re.sub(
         r"A store has (\d+) items\. It sells (\d+)% on Monday and (\d+) more on Tuesday\. How many items remain\?",
-        r"Total items: \1. Sells \2% Mon, \3 Tue. Remaining?",
+        r"Store=\1 items. Sells \2% Mon & \3 Tue. Remaining?",
         compressed,
         flags=re.IGNORECASE
     )
     # Codegen: Boolean check functions (palindrome, prime, etc.)
     compressed = re.sub(
         r"Write a Python function named `(\w+)` that takes a (.*?) and returns True if it is (.*?),\s+and False otherwise\.\s*(.*?)\s*Return ONLY the python function implementation\.",
-        r"Write python function `\1(\2) -> bool` returning True if it is \3, else False. \4 Return ONLY code.",
+        r"Write python function `\1` taking \2 returning True if it is \3, else False. \4 Return ONLY code.",
         compressed,
         flags=re.IGNORECASE
     )

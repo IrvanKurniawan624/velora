@@ -354,7 +354,10 @@ class AgentService:
                 elif task_type == "summarise":
                     required_keys = ["bullets"]
                 elif task_type == "ner":
-                    required_keys = ["PERSON", "ORG", "LOC"]
+                    required_keys = []
+                    for key in ["PERSON", "ORG", "LOC", "DATE"]:
+                        if key.lower() in prompt.lower():
+                            required_keys.append(key)
                     
                 # Check JSON is parseable and contains required keys
                 if not self.self_check.validate_json_structure(local_response.content, required_keys=required_keys):
