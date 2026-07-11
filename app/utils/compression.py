@@ -68,7 +68,37 @@ def compress_prompt(prompt: str, task_type: str) -> str:
                 stripped = strip_python_comments_and_docstrings(block)
                 compressed = compressed.replace(block, stripped)
 
-    # 2. Prune verbose headers and instructions (filler removal)
+    # 2. Parameterized template compression (regex-based) - Run FIRST on pristine text
+    # Math: Train travel
+    compressed = re.sub(
+        r"If a train travels at (\d+) miles per hour for ([\d\.]+) hours, how many miles does it cover\?",
+        r"Train speed: \1 mph, duration: \2 hours. Distance covered?",
+        compressed,
+        flags=re.IGNORECASE
+    )
+    # Math: Store sales
+    compressed = re.sub(
+        r"A store has (\d+) items\. It sells (\d+)% on Monday and (\d+) more on Tuesday\. How many items remain\?",
+        r"Total items: \1. Sells \2% Mon, \3 Tue. Remaining?",
+        compressed,
+        flags=re.IGNORECASE
+    )
+    # Codegen: Boolean check functions (palindrome, prime, etc.)
+    compressed = re.sub(
+        r"Write a Python function named `(\w+)` that takes a (.*?) and returns True if it is (.*?),\s+and False otherwise\.\s*(.*?)\s*Return ONLY the python function implementation\.",
+        r"Write python function `\1(\2) -> bool` returning True if it is \3, else False. \4 Return ONLY code.",
+        compressed,
+        flags=re.IGNORECASE
+    )
+    # Debugging: Buggy functions
+    compressed = re.sub(
+        r"This function should return the (.*?) of a list but has a bug:\s*(.*?)\s*Find and fix it\. Return ONLY the corrected python function implementation\.",
+        r"Fix bug in function (should return \1): \2 Return ONLY code.",
+        compressed,
+        flags=re.IGNORECASE
+    )
+
+    # 3. Prune verbose headers and instructions (filler removal)
     replacements = {
         "classify the sentiment of the following product review as positive, negative, or neutral, and provide a short reason. review:": "Classify sentiment (positive/negative/neutral) and reason. Review:",
         "classify the sentiment of this review:": "Classify sentiment. Review:",
@@ -90,7 +120,7 @@ def compress_prompt(prompt: str, task_type: str) -> str:
         pattern = re.compile(re.escape(verbose), re.IGNORECASE)
         compressed = pattern.sub(concise, compressed)
         
-    # Generic regex-based verbosity/politeness cleanup
+    # 4. Generic regex-based verbosity/politeness cleanup - Run LAST
     # Remove politeness and general intro fillers
     compressed = re.sub(r"\b(please|kindly|could you|would you mind|write a|solve the following|solve this)\s+", "", compressed, flags=re.IGNORECASE)
     # Remove standard transition fillers
