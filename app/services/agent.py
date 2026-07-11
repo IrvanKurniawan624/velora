@@ -115,21 +115,25 @@ class AgentService:
         prompt_lower = prompt.lower()
         
         # 1. Sentiment detection (highly specific)
-        if "sentiment" in prompt_lower or "classify the sentiment" in prompt_lower:
+        sentiment_keywords = ["sentiment", "classify", "opinion", "review", "tone"]
+        if any(kw in prompt_lower for kw in sentiment_keywords):
             return "sentiment"
             
         # 2. NER detection (highly specific)
-        if "extract all" in prompt_lower or "named entities" in prompt_lower or "ner" in prompt_lower:
+        ner_keywords = ["extract", "named entities", "ner", "entities", "label each as"]
+        if any(kw in prompt_lower for kw in ner_keywords):
             return "ner"
             
         # 3. Summarisation detection (highly specific)
-        if "summarize" in prompt_lower or "summarise" in prompt_lower or "summary" in prompt_lower:
+        summarise_keywords = ["summarize", "summarise", "summary", "bullet", "condense", "gist"]
+        if any(kw in prompt_lower for kw in summarise_keywords):
             return "summarise"
             
         # 4. Logic detection
         logic_patterns = [
             r"\blogic puzzle\b", r"\bfriends\b", r"\bowns the\b", r"\bsitting in a row\b", 
-            r"\bif and only if\b", r"\btrue or false\b", r"\btruth table\b", r"\bdeduce\b"
+            r"\bif and only if\b", r"\btrue or false\b", r"\btruth table\b", r"\bdeduce\b",
+            r"\bpuzzle\b", r"\bconstraints\b"
         ]
         if any(re.search(pat, prompt_lower) for pat in logic_patterns):
             return "logic"
@@ -145,11 +149,16 @@ class AgentService:
             return "code"
             
         # 6. Math detection
-        math_patterns = [
-            r"\d+\s*[\+\-\*\/=]\s*\d+", r"\bpercent\b", r"\bpercentage\b", r"\barithmetic\b",
-            r"\bhow many\b", r"\bsolve for\b", r"\bratio\b", r"\bprobability\b"
+        math_keywords = [
+            "percent", "percentage", "arithmetic", "how many", "solve for", "ratio", 
+            "probability", "calculate", "remain", "cost", "total cost", "multiply", 
+            "divide", "subtract", "plus", "minus", "sum", "math"
         ]
-        if any(re.search(pat, prompt_lower) for pat in math_patterns):
+        math_patterns = [
+            r"\d+\s*[\+\-\*\/=]\s*\d+",
+            r"\bhow\s+much\b"
+        ]
+        if any(kw in prompt_lower for kw in math_keywords) or any(re.search(pat, prompt_lower) for pat in math_patterns):
             return "math"
             
         return "factual"
