@@ -142,8 +142,10 @@ class AgentService:
         code_patterns = [
             r"def\s+\w+\(", r"import\s+", r"class\s+\w+", r"function\s*\(", 
             r"const\s+\w+\s*=", r"let\s+\w+\s*=", r"var\s+\w+\s*=", r"```python",
-            r"\bcode\b", r"\bdebug\b", r"\bsyntax\b", r"\bcompile\b", r"\bpython\b", r"\bfunction\b",
-            r"\bimplementation\b", r"\balgorithm\b", r"\bprogram\b", r"\bscript\b"
+            r"\bdebug\b", r"\bcompile\b", r"\bsyntax\b", r"\bfix\s+bug\b", 
+            r"\bwrite\s+a\s+python\b", r"\bwrite\s+python\b", r"\bwrite\s+function\b", 
+            r"\bimplement\s+a\b", r"\bcorrected\s+python\b", r"\bpython\s+code\b",
+            r"\bcode\s+implementation\b", r"\bwrite\s+code\b"
         ]
         if any(re.search(pat, prompt_lower) for pat in code_patterns):
             return "code"
