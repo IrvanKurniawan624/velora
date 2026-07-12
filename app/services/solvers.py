@@ -90,7 +90,8 @@ def _sentiment_hits(text):
 
 
 def solve_sentiment(prompt):
-    text = prompt.split(":", 1)[1] if ":" in prompt else prompt
+    m_quote = re.search(r"'(.*?)'", prompt)
+    text = m_quote.group(1) if m_quote else (prompt.split(":", 1)[1] if ":" in prompt else prompt)
     if len(text.split()) < 3:
         return None
     low = text.lower()
@@ -111,6 +112,12 @@ def solve_sentiment(prompt):
         label, why = "positive", f"positive cues: {', '.join(sorted(pos))}"
     else:
         label, why = "negative", f"negative cues: {', '.join(sorted(neg))}"
+        
+    if "json" in prompt.lower():
+        import json
+        ans_dict = {"sentiment": label, "reason": f"The review contains {why}."}
+        return json.dumps(ans_dict), confidence
+        
     return f"Sentiment: {label}. The review contains {why}.", confidence
 
 

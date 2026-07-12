@@ -257,6 +257,51 @@ class AgentService:
         prompt_lower = prompt.lower()
         text = text.strip()
         
+        # If the task requires JSON output, parse it first, apply constraints inside, and re-serialize
+        if "json" in prompt_lower:
+            import ast
+            parsed_dict = None
+            try:
+                # Find the outer-most { ... }
+                match = re.search(r"(\{.*\})", text, re.DOTALL)
+                if match:
+                    json_candidate = match.group(1).strip()
+                    try:
+                        parsed_dict = json.loads(json_candidate)
+                    except Exception:
+                        try:
+                            parsed_dict = ast.literal_eval(json_candidate)
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+                
+            if isinstance(parsed_dict, dict) and "bullets" in parsed_dict:
+                bullets = parsed_dict["bullets"]
+                if isinstance(bullets, list):
+                    # Enforce bullet count and words per bullet constraint
+                    m_b = re.search(r"(?:exactly\s+|in\s+|at most\s+)?(\d+)\s+bullet\s+points", prompt, re.I)
+                    n_b = int(m_b.group(1)) if m_b else 3
+                    m_w = re.search(r"no\s+longer\s+than\s+(\d+)\s+words", prompt, re.I)
+                    n_w = int(m_w.group(1)) if m_w else 15
+                    
+                    clean_bullets = []
+                    for b in bullets:
+                        b = str(b).strip()
+                        # Strip bullet points symbols from the start of the item if generated
+                        b = re.sub(r"^[-*•+\d.]\s*", "", b).strip()
+                        words = b.split()
+                        # Only truncate if prompt specifies word limit explicitly
+                        if m_w and len(words) > n_w:
+                            b = " ".join(words[:n_w]).rstrip(",;:") + "."
+                        clean_bullets.append(b)
+                        
+                    if len(clean_bullets) > n_b:
+                        clean_bullets = clean_bullets[:n_b]
+                    parsed_dict["bullets"] = clean_bullets
+                    return json.dumps(parsed_dict)
+            return text
+            
         # 1. Enforce sentence count constraint (e.g. exactly two sentences)
         if "sentence" in prompt_lower:
             m_s = re.search(r"(?:exactly\s+|in\s+|at most\s+)?(\d+)\s+sentences", prompt, re.I)
@@ -339,16 +384,33 @@ class AgentService:
 
         # If it's a JSON-producing task
         elif task_type in ["sentiment", "ner", "summarise"]:
+            json_candidate = None
             match = re.search(r"```json\s*(.*?)\s*```", text, re.DOTALL | re.IGNORECASE)
             if match:
-                return match.group(1).strip()
-            match = re.search(r"```\s*(.*?)\s*```", text, re.DOTALL)
-            if match:
-                return match.group(1).strip()
-            # Try finding the outer-most { ... }
-            match = re.search(r"(\{.*\})", text, re.DOTALL)
-            if match:
-                return match.group(1).strip()
+                json_candidate = match.group(1).strip()
+            else:
+                match = re.search(r"```\s*(.*?)\s*```", text, re.DOTALL)
+                if match:
+                    json_candidate = match.group(1).strip()
+                else:
+                    match = re.search(r"(\{.*\})", text, re.DOTALL)
+                    if match:
+                        json_candidate = match.group(1).strip()
+                        
+            if json_candidate:
+                try:
+                    json.loads(json_candidate)
+                    return json_candidate
+                except Exception:
+                    pass
+                import ast
+                try:
+                    val = ast.literal_eval(json_candidate)
+                    if isinstance(val, dict):
+                        return json.dumps(val)
+                except Exception:
+                    pass
+                return json_candidate
             return text
 
         # For other tasks, just remove standard top/bottom backticks if any
@@ -466,7 +528,8 @@ class AgentService:
             from app.services.gate import score_local_response
             try:
                 logger.info("Attempting local inference for sequential task...")
-                local_response = self.local_client.generate(compressed_prompt, max_tokens=160, task_type=task_type)
+                max_t = 380 if task_type in ("summarise", "factual") else 200
+                local_response = self.local_client.generate(compressed_prompt, max_tokens=max_t, task_type=task_type)
                 local_clean = self.clean_and_extract_content(local_response.content, task_type, prompt)
                 score = score_local_response(prompt, local_clean, task_type)
                 
@@ -694,7 +757,8 @@ class AgentService:
                         
                 try:
                     logger.info(f"Task {task_id}: Attempting local inference...")
-                    local_response = self.local_client.generate(compressed_prompt, max_tokens=160, task_type=task_type)
+                    max_t = 380 if task_type in ("summarise", "factual") else 200
+                    local_response = self.local_client.generate(compressed_prompt, max_tokens=max_t, task_type=task_type)
                     local_content = local_response.content
                     local_clean = self.clean_and_extract_content(local_content, task_type, prompt)
                     
