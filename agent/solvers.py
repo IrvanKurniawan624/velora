@@ -173,10 +173,9 @@ def _facts_agree(ctx, q, a, b) -> bool:
 
 
 _PROG_SYS = ("You convert word problems into Python. Write a simple, correct Python 3 "
-             "program that computes the requested result. Assign intermediate counts/percentages "
-             "to variables, compute the final requested value, and output it with print(). "
-             "Do not use complex index filtering or list comprehensions unless necessary. "
-             "Output only the code. No markdown, no comments, no explanations.")
+             "program that computes the requested result and prints it with print(). "
+             "Keep calculations direct and correct. Do not use complex list comprehensions "
+             "or index filtering. Output only the code. No markdown, no comments, no explanations.")
 
 
 def _math_ballot(ctx, task, kind, temp, seed):
@@ -184,6 +183,20 @@ def _math_ballot(ctx, task, kind, temp, seed):
     if kind == "prog":
         code = extract_code(ctx.chat(_PROG_SYS, task, temperature=temp,
                                      max_tokens=220, seed=seed))
+        if code and "print(" not in code:
+            lines = [ln.strip() for ln in code.splitlines() if ln.strip()]
+            if lines:
+                if len(lines) == 1:
+                    code = f"print({lines[0]})"
+                else:
+                    last_line = lines[-1]
+                    if "=" in last_line:
+                        var_name = last_line.split("=")[0].strip()
+                        lines.append(f"print({var_name})")
+                        code = "\n".join(lines)
+                    else:
+                        lines[-1] = f"print({last_line})"
+                        code = "\n".join(lines)
         ok, out, _ = run_python(code) if code else (False, "", "")
         return last_number(out) if ok else None
     cot = ctx.chat("Solve the problem with brief step-by-step reasoning "
