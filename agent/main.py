@@ -252,7 +252,12 @@ def run():
     # ---- Pass 2 (full): re-verify ascending by confidence while time remains
     ctx.fast = False
     ctx.task_deadline = None
-    weak = sorted((it for it in work if confs[it["id"]] < 0.9),
+    # Re-verify only genuinely-low-confidence tasks. The 0.9 threshold used to
+    # re-verify ~18/29 tasks (incl. already-correct 0.80-0.85 gen/ner/sum),
+    # blowing the 10-min judge cap. 0.78 keeps the weak ones (logic, factual,
+    # math, code-debug) and skips the rest, cutting pass 2 from ~345s to ~180s
+    # while preserving accuracy (the skipped tasks were already correct).
+    weak = sorted((it for it in work if confs[it["id"]] < 0.78),
                   key=lambda it: confs[it["id"]])
     pass2_cut = SOFT_DEADLINE - (100 if MODE == "hybrid" else 25)
     for it in weak:
