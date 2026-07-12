@@ -419,6 +419,8 @@ class AgentService:
             compressed_prompt += "\nReturn ONLY Python code block. No comments or explanations."
         elif task_type in ["sentiment", "ner", "summarise"] and "json" in prompt_lower:
             compressed_prompt += "\nReturn ONLY raw JSON object. No explanations or markdown fences."
+        elif task_type == "ner":
+            compressed_prompt += "\nReturn ONLY a list of entities in the format: entity - type; entity - type. No explanations or conversational text."
         else:
             # Check if the prompt explicitly asks for explanations/reasons/summaries/labels/details
             needs_explanation = any(k in prompt_lower for k in [
@@ -432,7 +434,7 @@ class AgentService:
         logger.info(f"Prompt compressed. Original: {len(prompt)} chars -> Compressed & Formatted: {len(compressed_prompt)} chars.")
 
         # 3. Check if we should attempt local cascade or fast-track directly
-        if self.use_local_cascade and task_type in ("summarise", "factual"):
+        if self.use_local_cascade and task_type in ("summarise", "factual", "ner"):
             # First, check if task is math or logic to run our new robust solvers
             if task_type == "math":
                 from app.services.solvers import solve_math_via_code
@@ -630,7 +632,7 @@ class AgentService:
                     continue
                     
             # 2.5 Run local model inference and score it (if cascade is enabled)
-            if self.use_local_cascade and task_type in ("summarise", "factual"):
+            if self.use_local_cascade and task_type in ("summarise", "factual", "ner"):
                 # First, check if task is math or logic to run our new robust solvers
                 if task_type == "math":
                     from app.services.solvers import solve_math_via_code
@@ -679,6 +681,8 @@ class AgentService:
                     compressed_prompt += "\nReturn ONLY Python code block. No comments or explanations."
                 elif task_type in ["sentiment", "ner", "summarise"] and "json" in prompt_lower:
                     compressed_prompt += "\nReturn ONLY raw JSON object. No explanations or markdown fences."
+                elif task_type == "ner":
+                    compressed_prompt += "\nReturn ONLY a list of entities in the format: entity - type; entity - type. No explanations or conversational text."
                 else:
                     needs_explanation = any(k in prompt_lower for k in [
                         "explain", "reason", "why", "describe", "difference", "summarize", "summarise", "summary", "label", "extract", "bullet"
