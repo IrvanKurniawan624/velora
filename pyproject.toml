@@ -24,7 +24,6 @@ exclude = [
     # strict lint config so the faithful port isn't reformatted; logic changes
     # made during the local-context optimization pass are linted manually.
     "agent",
-    "eval",
 ]
 
 [tool.ruff.lint]
@@ -33,5 +32,4 @@ ignore = []
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
-testpaths = ["tests"]
 python_files = ["test_*.py"]

@@ -65,10 +65,10 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Run container against practice tasks (2 cpu / 4 GB, like the judge)
+      - name: Run container against input tasks (2 cpu / 4 GB, like the judge)
         run: |
           mkdir -p /tmp/in /tmp/out
-          cp eval/practice_tasks.json /tmp/in/tasks.json
+          cp input/tasks.json /tmp/in/tasks.json
           time docker run --rm --cpus=2 --memory=4g \
             -v /tmp/in:/input:ro -v /tmp/out:/output \
             ${{ env.IMAGE }}:latest

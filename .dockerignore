@@ -22,7 +22,6 @@ ENV/
 
 # Testing and dev directories
 
-tests/
 benchmarks/
 docs/
 
@@ -43,7 +42,6 @@ synapse.config.json
 # Retired engine + project metadata. The Dockerfile COPYs only agent/, so none
 # of the below enter the image — listed here to keep the build context lean.
 app/
-eval/
 .github/
 pyproject.toml
 uv.lock
