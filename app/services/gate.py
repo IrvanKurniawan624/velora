@@ -101,8 +101,9 @@ def score_local_response(prompt: str, answer: str, category: str) -> float:
     # Factual
     if len(a.split()) < 3:
         return 0.0
-    if " and " in prompt.lower() or prompt.count("?") > 1:
-        # Multi-part factual questions are prone to local hallucinations, force escalation
+    # Refined check: escalate if multiple question marks exist OR if prompt is long (>150 chars) and contains joining/comparison keywords
+    if prompt.count("?") > 1 or (len(prompt) > 150 and any(k in prompt.lower() for k in (" and ", " explain ", " compare ", " difference "))):
+        # Long/multi-part factual questions are prone to local hallucinations, force escalation
         return 0.0
         
     return 0.85
