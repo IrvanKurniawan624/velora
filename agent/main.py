@@ -10,6 +10,7 @@ MODE=hybrid  -> escalates still-low-confidence tasks via FIREWORKS_BASE_URL.
 """
 import json
 import os
+import re
 import sys
 import threading
 import time
@@ -30,6 +31,64 @@ ESC_CONF = float(os.environ.get("ESC_CONF", "0.55"))
 _lock = threading.Lock()
 _results = {}          # task_id -> answer str
 _order = []            # task ids in input order
+
+# Velora-specific: some tasks explicitly request a JSON answer (e.g. "Return
+# strictly JSON with keys 'sentiment' and 'reason'"). The handlers produce clean
+# plain-text / line formats that an intent judge already accepts; this repackages
+# them as JSON ONLY when the prompt asks for it, so the proven plain-text path is
+# untouched for every other case. No answers are hardcoded — it only reformats
+# the model's own extracted content. Never raises.
+_TYPE_KEYS = {
+    "person": "PERSON", "organization": "ORG", "org": "ORG",
+    "location": "LOC", "place": "LOC", "loc": "LOC",
+    "date": "DATE", "time": "TIME", "event": "EVENT",
+    "product": "PRODUCT", "money": "MONEY", "percent": "PERCENT",
+    "other": "OTHER",
+}
+
+
+def json_if_requested(prompt, answer, cat):
+    if not answer or "json" not in prompt.lower():
+        return answer
+    try:
+        if cat == "sentiment":
+            low = answer.strip()
+            label = next((lab for lab in ("mixed", "positive", "negative", "neutral")
+                          if re.search(rf"\b{lab}\b", low, re.I)), "neutral")
+            reason = re.sub(r"^\s*\w+\s*[-–—:]\s*", "", low).strip().rstrip(".")
+            return json.dumps({"sentiment": label, "reason": reason or low})
+        if cat == "summarize":
+            n_b = 3
+            m = re.search(r"(\d+)\s+(?:\w+\s+){0,2}bullet", prompt, re.I)
+            if m:
+                n_b = int(m.group(1))
+            items = [ln.strip().lstrip("-*• ").strip() for ln in answer.splitlines()
+                     if ln.strip()]
+            if len(items) < 2:
+                items = [s.strip().rstrip(".") for s in
+                         re.split(r"(?<=[.!?])\s+", answer.strip()) if s.strip()]
+            return json.dumps({"bullets": items[:n_b]})
+        if cat == "ner":
+            known = ("PERSON", "ORG", "LOC", "DATE", "TIME", "EVENT",
+                     "PRODUCT", "MONEY", "PERCENT", "OTHER")
+            up = prompt.upper()
+            keys = [k for k in known if k in up]
+            if not keys:
+                keys = [k for k in dict.fromkeys(
+                            re.findall(r"[\"']([A-Z]{2,})[\"']", prompt))
+                        if k != "JSON"] or ["PERSON", "ORG", "LOC", "DATE"]
+            grouped = {k: [] for k in keys}
+            for ln in answer.splitlines():
+                m = re.match(r"(.+?)\s*[-–—:]\s*(.+)", ln.strip())
+                if m:
+                    ent, typ = m.group(1).strip(), m.group(2).strip().lower()
+                    k = _TYPE_KEYS.get(typ)
+                    if k and k in grouped:
+                        grouped[k].append(ent)
+            return json.dumps(grouped)
+    except Exception:
+        return answer
+    return answer
 
 
 def elapsed():
@@ -182,12 +241,13 @@ def run():
                 res["conf"] = min(res.get("conf", 0.3), 0.4)
             except Exception:
                 pass
+        ans = json_if_requested(it["prompt"], res.get("answer", ""), it["cat"])
         with _lock:
-            _results[it["id"]] = res.get("answer", "")
+            _results[it["id"]] = ans
         confs[it["id"]] = res.get("conf", 0.3)
         flush()
         log(f"[{i+1}/{len(work)}] {it['id']} cat={it['cat']} "
-            f"conf={confs[it['id']]:.2f} len={len(res.get('answer',''))}")
+            f"conf={confs[it['id']]:.2f} len={len(ans)}")
 
     # ---- Pass 2 (full): re-verify ascending by confidence while time remains
     ctx.fast = False
@@ -206,7 +266,8 @@ def run():
             continue
         if res.get("answer") and res.get("conf", 0) > confs[it["id"]]:
             with _lock:
-                _results[it["id"]] = res["answer"]
+                _results[it["id"]] = json_if_requested(
+                    it["prompt"], res["answer"], it["cat"])
             confs[it["id"]] = res["conf"]
             flush()
 
