@@ -1,49 +1,50 @@
-# Stage 1: Build virtual environment and compile native extensions
-FROM python:3.12-slim AS builder
+# syntax=docker/dockerfile:1
+# Velora zero-api-local agent: local llama.cpp (Qwen2.5-3B-Instruct Q4_K_M) +
+# stdlib-only Python orchestrator. 0 remote tokens in default MODE=zero.
+# Final image ~2.3 GB compressed — far under the 10 GB limit. linux/amd64.
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+ARG LLAMA_TAG=b9950
 
-WORKDIR /app
-
-# Install compilation dependencies for compiling native packages like llama-cpp-python
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    cmake \
+# ---- stage 1: llama.cpp server binaries -------------------------------------
+FROM debian:bookworm-slim AS llama
+ARG LLAMA_TAG
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+RUN curl -fL -o /tmp/llama.tgz \
+      "https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_TAG}/llama-${LLAMA_TAG}-bin-ubuntu-x64.tar.gz" \
+    && mkdir -p /tmp/l /opt/llama \
+    && tar -xzf /tmp/llama.tgz -C /tmp/l \
+    && SERVER="$(find /tmp/l -name llama-server -type f | head -1)" \
+    && cp -a "$(dirname "$SERVER")/." /opt/llama/ \
+    && /opt/llama/llama-server --version || true
 
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-install-project --no-dev
+# ---- stage 2: model weights --------------------------------------------------
+FROM debian:bookworm-slim AS model
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /models && curl -fL -o /models/model.gguf \
+      "https://huggingface.co/bartowski/Qwen2.5-3B-Instruct-GGUF/resolve/main/Qwen2.5-3B-Instruct-Q4_K_M.gguf"
 
-
-# Stage 2: Final lightweight runner image
+# ---- stage 3: runtime --------------------------------------------------------
 FROM python:3.12-slim
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 libcurl4 \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=llama /opt/llama /opt/llama
+COPY --from=model /models /models
+COPY agent /app/agent
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+ARG MODE=zero
+ARG ESC_MAX=6
+ARG ESC_CONF=0.55
+ARG LLAMA_CTX=4096
+ENV LLAMA_BIN=/opt/llama/llama-server \
+    MODEL_PATH=/models/model.gguf \
+    LLAMA_THREADS=2 \
+    LLAMA_CTX=${LLAMA_CTX} \
+    MODE=${MODE} \
+    ESC_MAX=${ESC_MAX} \
+    ESC_CONF=${ESC_CONF} \
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
-
-# Install runtime utilities + OpenMP (required by llama-cpp-python for local model inference)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    ca-certificates \
-    libgomp1 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy the compiled virtual environment from builder stage
-COPY --from=builder /app/.venv /app/.venv
-
-# Setup grading volume mount points and model directory
-RUN mkdir -p /input /output /app/models
-
-# Download local Qwen 2.5 3B Q4_K_M GGUF model during build
-RUN curl -L -o /app/models/model.gguf \
-    https://huggingface.co/bartowski/Qwen2.5-3B-Instruct-GGUF/resolve/main/Qwen2.5-3B-Instruct-Q4_K_M.gguf
-
-# Copy codebase
-COPY . .
-
-# Set execution path to use python from virtual environment
-ENV PATH="/app/.venv/bin:$PATH"
-
-# Run main agent module
-CMD ["python", "-m", "app.main"]
+ENTRYPOINT ["python", "-m", "agent.main"]

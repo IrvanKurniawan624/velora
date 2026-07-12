@@ -1,17 +1,10 @@
 [project]
 name = "velora"
 version = "0.1.0"
-description = "Lightweight AI inference pipeline skeleton"
+description = "Zero-token local-first AI agent (AMD Hackathon Track 1)"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = [
-    "pydantic>=2.0.0",
-    "pydantic-settings>=2.0.0",
-    "httpx>=0.27.0",
-    "openai>=1.0.0",
-    "llama-cpp-python>=0.2.0",
-]
-
+dependencies = []
 
 [dependency-groups]
 dev = [
@@ -27,6 +20,11 @@ exclude = [
     ".venv",
     "node_modules",
     "benchmarks",
+    # Vendored, proven engine ported from project/ (ZeroFire). Kept out of the
+    # strict lint config so the faithful port isn't reformatted; logic changes
+    # made during the local-context optimization pass are linted manually.
+    "agent",
+    "eval",
 ]
 
 [tool.ruff.lint]
