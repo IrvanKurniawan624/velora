@@ -1,1 +1,0 @@
-# Velora app package
