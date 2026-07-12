@@ -47,6 +47,61 @@ _TYPE_KEYS = {
 }
 
 
+def _extract_ner_keys_from_prompt(prompt):
+    candidates = ["person", "org", "organization", "loc", "location", "date", "time", 
+                  "event", "product", "money", "percent", "other", "gpe"]
+    found_keys = []
+    quoted = re.findall(r"[\"']([a-zA-Z\-_]+)[\"']", prompt)
+    for q in quoted:
+        q_low = q.lower()
+        if any(c == q_low or q_low.startswith(c) or c.startswith(q_low) for c in candidates):
+            if q not in found_keys and q.upper() != "JSON":
+                found_keys.append(q)
+    if found_keys:
+        return found_keys
+    words = re.findall(r"\b([a-zA-Z]+)\b", prompt)
+    for w in words:
+        w_low = w.lower()
+        if w_low in candidates or w_low == "gpe":
+            if w not in found_keys and w.upper() != "JSON":
+                found_keys.append(w)
+    if found_keys:
+        return found_keys
+    return ["PERSON", "ORGANIZATION", "LOCATION", "DATE"]
+
+
+def _map_to_key(type_str, found_keys):
+    t_low = type_str.lower().strip()
+    mapping = {
+        "person": "person",
+        "organization": "organization",
+        "org": "organization",
+        "location": "location",
+        "loc": "location",
+        "gpe": "location",
+        "date": "date",
+        "time": "time",
+        "event": "event",
+        "product": "product",
+        "money": "money",
+        "percent": "percent",
+        "other": "other"
+    }
+    std_low = mapping.get(t_low, t_low)
+    for k in found_keys:
+        k_low = k.lower()
+        if k_low == std_low:
+            return k
+        if (std_low == "organization" and k_low == "org") or (std_low == "org" and k_low == "organization"):
+            return k
+        if (std_low == "location" and k_low == "loc") or (std_low == "loc" and k_low == "location"):
+            return k
+    for k in found_keys:
+        if k.lower() == t_low:
+            return k
+    return None
+
+
 def json_if_requested(prompt, answer, cat):
     if not answer or "json" not in prompt.lower():
         return answer
@@ -55,8 +110,20 @@ def json_if_requested(prompt, answer, cat):
             low = answer.strip()
             label = next((lab for lab in ("mixed", "positive", "negative", "neutral")
                           if re.search(rf"\b{lab}\b", low, re.I)), "neutral")
+            if "Mixed" in prompt or "Positive" in prompt:
+                label = label.title()
+            elif "MIXED" in prompt or "POSITIVE" in prompt:
+                label = label.upper()
             reason = re.sub(r"^\s*\w+\s*[-–—:]\s*", "", low).strip().rstrip(".")
-            return json.dumps({"sentiment": label, "reason": reason or low})
+            quoted = re.findall(r"[\"']([a-zA-Z_]+)[\"']", prompt)
+            k_sent = "sentiment"
+            k_reason = "reason"
+            for q in quoted:
+                if "sent" in q.lower():
+                    k_sent = q
+                elif "reason" in q.lower() or "just" in q.lower() or "explan" in q.lower():
+                    k_reason = q
+            return json.dumps({k_sent: label, k_reason: reason or low})
         if cat == "summarize":
             n_b = 3
             m = re.search(r"(\d+)\s+(?:\w+\s+){0,2}bullet", prompt, re.I)
@@ -69,20 +136,13 @@ def json_if_requested(prompt, answer, cat):
                          re.split(r"(?<=[.!?])\s+", answer.strip()) if s.strip()]
             return json.dumps({"bullets": items[:n_b]})
         if cat == "ner":
-            known = ("PERSON", "ORG", "LOC", "DATE", "TIME", "EVENT",
-                     "PRODUCT", "MONEY", "PERCENT", "OTHER")
-            up = prompt.upper()
-            keys = [k for k in known if k in up]
-            if not keys:
-                keys = [k for k in dict.fromkeys(
-                            re.findall(r"[\"']([A-Z]{2,})[\"']", prompt))
-                        if k != "JSON"] or ["PERSON", "ORG", "LOC", "DATE"]
+            keys = _extract_ner_keys_from_prompt(prompt)
             grouped = {k: [] for k in keys}
             for ln in answer.splitlines():
                 m = re.match(r"(.+?)\s*[-–—:]\s*(.+)", ln.strip())
                 if m:
-                    ent, typ = m.group(1).strip(), m.group(2).strip().lower()
-                    k = _TYPE_KEYS.get(typ)
+                    ent, typ = m.group(1).strip(), m.group(2).strip()
+                    k = _map_to_key(typ, keys)
                     if k and k in grouped:
                         grouped[k].append(ent)
             return json.dumps(grouped)

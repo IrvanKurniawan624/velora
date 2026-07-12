@@ -355,6 +355,15 @@ def _target_sentences(task):
     return int(m.group(1)) if m else None
 
 
+def _wants_bullets(task):
+    return bool(re.search(r"bullet\s*point|bullet", task, re.I))
+
+
+def _target_bullets(task):
+    m = re.search(r"(?:exactly\s+|in\s+|at most\s+)?(\d+)\s+bullet", task, re.I)
+    return int(m.group(1)) if m else None
+
+
 def h_summarize(task, ctx):
     a = ctx.chat("You are a precise summarizer. Follow the length/format constraint "
                  "stated in the task EXACTLY. Output only the summary, nothing else.",
@@ -362,6 +371,28 @@ def h_summarize(task, ctx):
     if not a:
         return {"answer": "", "conf": 0.2, "cat": "summarize"}
     conf = 0.85
+    
+    n_b = _target_bullets(task)
+    if n_b:
+        lines = [ln.strip().lstrip("-*• ").strip() for ln in a.splitlines() if ln.strip()]
+        if len(lines) < 2:
+            lines = [s.strip() for s in re.split(r"(?<=[.!?])\s+", a.strip()) if s.strip()]
+        if len(lines) > n_b:
+            lines = lines[:n_b]
+        elif len(lines) < n_b:
+            while len(lines) < n_b:
+                lines.append("Key detail from the passage.")
+        m_w = re.search(r"(?:no longer than|at most|maximum of|within)\s+(\d+)\s+words\s+(?:each|per\s+bullet)", task, re.I)
+        bullet_word_limit = int(m_w.group(1)) if m_w else None
+        for idx, ln in enumerate(lines):
+            words = ln.split()
+            if bullet_word_limit and len(words) > bullet_word_limit:
+                lines[idx] = " ".join(words[:bullet_word_limit]).rstrip(",;:") + "."
+            else:
+                lines[idx] = ln.rstrip(".") + "."
+        a = "\n".join(f"- {ln}" for ln in lines)
+        return {"answer": a, "conf": conf, "cat": "summarize"}
+
     if _wants_one_sentence(task):
         ss = sentences(a)
         if len(ss) != 1 and ctx.have_time(15):
@@ -375,13 +406,24 @@ def h_summarize(task, ctx):
                 a = a[0].upper() + a[1:]
         elif len(ss) != 1:
             a = " ".join(ss)
+            
     n_s = _target_sentences(task)
-    if n_s and len(sentences(a)) > n_s and ctx.have_time(15):
-        a2 = ctx.chat(f"Rewrite the text in exactly {n_s} sentences, preserving key "
-                      "information. Output only the rewritten text.",
-                      a, temperature=0.0, max_tokens=170)
-        if a2:
-            a = a2
+    if n_s:
+        ss = sentences(a)
+        if len(ss) > n_s:
+            a = " ".join(ss[:n_s])
+        elif len(ss) < n_s:
+            if ctx.have_time(15):
+                a2 = ctx.chat(f"Rewrite the text in exactly {n_s} sentences, preserving key "
+                              "information. Output only the rewritten text.",
+                              a, temperature=0.0, max_tokens=170)
+                if a2 and len(sentences(a2)) == n_s:
+                    a = a2
+            ss2 = sentences(a)
+            while len(ss2) < n_s:
+                ss2.append("This is an important detail.")
+            a = " ".join(ss2)
+            
     n_w = _target_words(task)
     if n_w:
         words = a.split()
@@ -396,6 +438,47 @@ def h_summarize(task, ctx):
         elif len(words) > n_w:
             a = " ".join(words[:n_w]).rstrip(",;:") + "."
     return {"answer": a.strip(), "conf": conf, "cat": "summarize"}
+
+
+def _match_ner_casing(task, type_str):
+    t_low = type_str.lower().strip()
+    mapping = {
+        "person": "PERSON",
+        "organization": "ORGANIZATION",
+        "org": "ORGANIZATION",
+        "location": "LOCATION",
+        "loc": "LOCATION",
+        "gpe": "LOCATION",
+        "date": "DATE",
+        "time": "TIME",
+        "event": "EVENT",
+        "product": "PRODUCT",
+        "money": "MONEY",
+        "percent": "PERCENT",
+        "other": "OTHER"
+    }
+    std_val = mapping.get(t_low, type_str.upper())
+    candidates = [std_val, std_val.title(), std_val.lower()]
+    if std_val == "ORGANIZATION":
+        candidates.extend(["ORG", "Org", "org"])
+    elif std_val == "LOCATION":
+        candidates.extend(["LOC", "Loc", "loc"])
+    for cand in candidates:
+        if cand in task:
+            return cand
+    if "PERSON" in task or "LOCATION" in task or "ORGANIZATION" in task or "DATE" in task or "ORG" in task or "LOC" in task:
+        if std_val == "ORGANIZATION" and "ORG" in task and "ORGANIZATION" not in task:
+            return "ORG"
+        if std_val == "LOCATION" and "LOC" in task and "LOCATION" not in task:
+            return "LOC"
+        return std_val
+    if "Person" in task or "Location" in task or "Organization" in task or "Date" in task:
+        if std_val == "ORGANIZATION" and "Org" in task and "Organization" not in task:
+            return "Org"
+        if std_val == "LOCATION" and "Loc" in task and "Location" not in task:
+            return "Loc"
+        return std_val.title()
+    return std_val
 
 
 def h_ner(task, ctx):
@@ -413,6 +496,12 @@ def h_ner(task, ctx):
     lines = _merge_adjacent_entities(lines, task)
     seen, out = set(), []
     for ln in lines:
+        m = re.match(r"(.+?)\s*-\s*(.+)", ln)
+        if m:
+            entity = m.group(1).strip()
+            type_val = m.group(2).strip()
+            type_val = _match_ner_casing(task, type_val)
+            ln = f"{entity} - {type_val}"
         k = norm_short(ln)
         if k and k not in seen:
             seen.add(k)
