@@ -10,7 +10,7 @@ class LocalClient:
 
     def load_model(self) -> None:
         """
-        Lazily load the Gemma 2B model using llama-cpp-python.
+        Lazily load the local model using llama-cpp-python.
         n_ctx=1024 sufficient for all benchmark tasks.
         n_threads=2 matches container vCPU budget.
         logits_all=False for fast inference (heuristic confidence used instead).
@@ -67,7 +67,7 @@ class LocalClient:
 
         # Heuristic based on task type to optimize local routing safety:
         if task_type == "math":
-            # 2B models are highly inaccurate for math arithmetic, always escalate
+            # 3B models are highly inaccurate for math arithmetic, always escalate
             return 0.10
         elif task_type == "logic":
             # Logic puzzles require strong reasoning, always escalate
@@ -79,14 +79,14 @@ class LocalClient:
             # Code is safe to run locally if it compiles successfully
             return 0.95
         elif task_type in ["sentiment", "ner", "summarise"]:
-            # Extraction and classification tasks are perfect for 2B models
+            # Extraction and classification tasks are perfect for 3B models
             return 0.95
 
         return 0.92
 
     def generate(self, prompt: str, system_prompt: str = "", max_tokens: int = 1024, temperature: float = 0.1, task_type: str = None) -> ChatResponse:
         """
-        Runs local inference using Gemma 2B.
+        Runs local inference using local model.
         Uses fast heuristic confidence scoring instead of logprobs to avoid
         logits_all=True overhead (~2 min/task on 2 vCPUs).
         """
@@ -94,7 +94,7 @@ class LocalClient:
         if self.llm == "fallback":
             return ChatResponse(
                 content="[Fallback: Local model inference not available]",
-                model="gemma-2-2b-fallback",
+                model="local-fallback",
                 confidence=0.0,
                 remote_tokens_used=0
             )
@@ -102,7 +102,7 @@ class LocalClient:
         # Construct messages according to Chat Completion format
         messages = []
         if system_prompt:
-            # Prepend system prompt to user content to prevent Gemma 2 system role crashes
+            # Prepend system prompt to user content to prevent local model system role crashes
             prompt = f"{system_prompt}\n\n{prompt}"
         messages.append({"role": "user", "content": prompt})
 
