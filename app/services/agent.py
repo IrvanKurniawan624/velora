@@ -433,6 +433,34 @@ class AgentService:
 
         # 3. Check if we should attempt local cascade or fast-track directly
         if self.use_local_cascade and task_type in ("summarise", "factual"):
+            # First, check if task is math or logic to run our new robust solvers
+            if task_type == "math":
+                from app.services.solvers import solve_math_via_code
+                logger.info("Attempting local math program solver for sequential task...")
+                math_res = solve_math_via_code(prompt, self.local_client)
+                if math_res:
+                    ans, conf = math_res
+                    logger.info(f"Sequential task resolved locally via math program solver (confidence={conf}).")
+                    resp = ChatResponse(content=ans, model="local_math_executor", confidence=conf, remote_tokens_used=0)
+                    self.save_to_cache(prompt, resp)
+                    return resp
+                else:
+                    logger.info("Sequential task math program solver failed/disagreed. Escalating.")
+                    
+            elif task_type == "logic":
+                from app.services.solvers import solve_logic_via_cot
+                logger.info("Attempting local logic CoT solver for sequential task...")
+                logic_res = solve_logic_via_cot(prompt, self.local_client)
+                if logic_res:
+                    ans, conf = logic_res
+                    logger.info(f"Sequential task resolved locally via logic CoT solver (confidence={conf}).")
+                    resp = ChatResponse(content=ans, model="local_logic_cot", confidence=conf, remote_tokens_used=0)
+                    self.save_to_cache(prompt, resp)
+                    return resp
+                else:
+                    logger.info("Sequential task logic CoT solver failed/disagreed. Escalating.")
+
+            # For other categories, attempt normal local generation and score check
             from app.services.gate import score_local_response
             try:
                 logger.info("Attempting local inference for sequential task...")
@@ -603,6 +631,44 @@ class AgentService:
                     
             # 2.5 Run local model inference and score it (if cascade is enabled)
             if self.use_local_cascade and task_type in ("summarise", "factual"):
+                # First, check if task is math or logic to run our new robust solvers
+                if task_type == "math":
+                    from app.services.solvers import solve_math_via_code
+                    logger.info(f"Task {task_id}: Attempting local math program solver...")
+                    math_res = solve_math_via_code(prompt, self.local_client)
+                    if math_res:
+                        ans, conf = math_res
+                        logger.info(f"Task {task_id} resolved locally via math program solver (confidence={conf}).")
+                        results.append({"task_id": task_id, "answer": ans})
+                        metrics.append({
+                            "task_id": task_id,
+                            "model": f"{self.settings.local_model_path} (MathCodeExecutor)",
+                            "remote_tokens_used": 0
+                        })
+                        self.save_to_cache(prompt, ChatResponse(content=ans, model="local_math_executor", confidence=conf, remote_tokens_used=0))
+                        continue
+                    else:
+                        logger.info(f"Task {task_id} math program solver failed/disagreed. Escalating.")
+                        
+                elif task_type == "logic":
+                    from app.services.solvers import solve_logic_via_cot
+                    logger.info(f"Task {task_id}: Attempting local logic CoT solver...")
+                    logic_res = solve_logic_via_cot(prompt, self.local_client)
+                    if logic_res:
+                        ans, conf = logic_res
+                        logger.info(f"Task {task_id} resolved locally via logic CoT solver (confidence={conf}).")
+                        results.append({"task_id": task_id, "answer": ans})
+                        metrics.append({
+                            "task_id": task_id,
+                            "model": f"{self.settings.local_model_path} (LogicCoTSolver)",
+                            "remote_tokens_used": 0
+                        })
+                        self.save_to_cache(prompt, ChatResponse(content=ans, model="local_logic_cot", confidence=conf, remote_tokens_used=0))
+                        continue
+                    else:
+                        logger.info(f"Task {task_id} logic CoT solver failed/disagreed. Escalating.")
+
+                # For other categories, attempt normal local generation and score check
                 from app.services.gate import score_local_response
                 from app.utils import compress_prompt
                 

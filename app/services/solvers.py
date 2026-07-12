@@ -258,3 +258,83 @@ def solve_deterministic(prompt: str, category: str):
         return solver(prompt)
     except Exception:
         return None
+
+
+def extract_code(text: str) -> str:
+    m = re.findall(r"```(?:python|py)?\s*\n(.*?)```", text, re.S | re.I)
+    if m:
+        return max(m, key=len).strip()
+    t = text.strip()
+    if t.startswith("```"):
+        t = t.strip("`").lstrip("python").strip()
+    return t
+
+
+def solve_math_via_code(prompt: str, local_client) -> tuple:
+    from app.services.pyexec import run_python
+    
+    sys_prompt = (
+        "You convert word problems into Python. Write a minimal Python 3 program "
+        "that computes the requested result and prints ONLY the final value with print(). "
+        "Integer results must print as integers. Output ONLY the raw Python code. "
+        "No explanations, no markdown comments, no conversational text."
+    )
+    
+    try:
+        res1 = local_client.generate(f"Prompt: {prompt}", system_prompt=sys_prompt, max_tokens=220)
+        code1 = extract_code(res1.content)
+        ok1, out1, err1 = run_python(code1)
+    except Exception:
+        ok1 = False
+        
+    if not ok1 or not out1.strip():
+        return None
+        
+    try:
+        res2 = local_client.generate(f"Prompt: {prompt}", system_prompt=sys_prompt + " Solve using a slightly different variable naming style.", max_tokens=220)
+        code2 = extract_code(res2.content)
+        ok2, out2, err2 = run_python(code2)
+    except Exception:
+        ok2 = False
+        
+    if ok2 and out2.strip() == out1.strip():
+        return out1.strip(), 0.95
+        
+    return None
+
+
+def extract_answer_line(text: str) -> str:
+    hits = re.findall(r"ANSWER:\s*(.+)", text)
+    if hits:
+        return hits[-1].strip().rstrip(".")
+    lines = [l.strip() for l in text.split("\n") if l.strip()]
+    if lines:
+        return lines[-1].strip().rstrip(".")
+    return None
+
+
+def solve_logic_via_cot(prompt: str, local_client) -> tuple:
+    sys_prompt = (
+        "You are a logical reasoning assistant. Solve the user's puzzle step by step, "
+        "reasoning carefully. End your response with exactly: ANSWER: <the final option, name, or value>."
+    )
+    
+    try:
+        res1 = local_client.generate(prompt, system_prompt=sys_prompt, max_tokens=300)
+        ans1 = extract_answer_line(res1.content)
+    except Exception:
+        ans1 = None
+        
+    if not ans1:
+        return None
+        
+    try:
+        res2 = local_client.generate(prompt, system_prompt=sys_prompt + " Double check your logic.", max_tokens=300)
+        ans2 = extract_answer_line(res2.content)
+    except Exception:
+        ans2 = None
+        
+    if ans2 and ans2.lower() == ans1.lower():
+        return ans1, 0.95
+        
+    return None
