@@ -176,3 +176,4 @@ Dockerfile        3-stage build: llama.cpp release + GGUF weights + slim runtime
   from `ALLOWED_MODELS` at runtime.
 - **Dev tooling:** `pytest`, `ruff` (the vendored `agent/` + `eval/` ports are
   excluded from ruff as proven code).
+
