@@ -95,47 +95,53 @@ def main() -> None:
     agent_service = AgentService(settings, self_check_service)
     
     # 4. Process tasks
-    results = []
-    metrics = []
-    for idx, task in enumerate(tasks, 1):
-        task_id = task.get("task_id")
-        prompt = task.get("prompt")
-        
-        if not task_id or not prompt:
-            print(f"Skipping task index {idx} due to missing task_id or prompt.")
-            continue
+    print(f"Routing {len(tasks)} tasks using speculative batch routing...")
+    try:
+        results, metrics = agent_service.process_all_tasks(tasks)
+        write_json_atomically(output_file, results)
+        write_json_atomically(output_file.parent / "metrics.json", metrics)
+    except Exception as e:
+        print(f"Error processing batch of tasks: {e}. Falling back to sequential routing.", file=sys.stderr)
+        results = []
+        metrics = []
+        for idx, task in enumerate(tasks, 1):
+            task_id = task.get("task_id")
+            prompt = task.get("prompt")
             
-        print(f"[{idx}/{len(tasks)}] Processing task {task_id}...")
-        
-        try:
-            # Process via speculative routing service
-            response = agent_service.process_task(prompt)
-            answer = response.content
-            model = response.model
-            remote_tokens = response.remote_tokens_used
-            print(f"Success. Source model: {response.model} | Answer length: {len(answer)} chars.")
-        except Exception as e:
-            print(f"Error processing task {task_id}: {e}", file=sys.stderr)
-            answer = f"Error during model generation: {e}"
-            model = "error"
-            remote_tokens = 0
+            if not task_id or not prompt:
+                print(f"Skipping task index {idx} due to missing task_id or prompt.")
+                continue
+                
+            print(f"[{idx}/{len(tasks)}] Processing task {task_id} (fallback)...")
             
-        results.append({
-            "task_id": task_id,
-            "answer": answer
-        })
-        metrics.append({
-            "task_id": task_id,
-            "model": model,
-            "remote_tokens_used": remote_tokens
-        })
-        
-        # Write results and metrics atomically after every task to protect against timeouts/kills
-        try:
-            write_json_atomically(output_file, results)
-            write_json_atomically(output_file.parent / "metrics.json", metrics)
-        except Exception as e:
-            print(f"Warning: Failed to write intermediate results atomically: {e}", file=sys.stderr)
+            try:
+                # Process via speculative routing service
+                response = agent_service.process_task(prompt)
+                answer = response.content
+                model = response.model
+                remote_tokens = response.remote_tokens_used
+                print(f"Success. Source model: {response.model} | Answer length: {len(answer)} chars.")
+            except Exception as ex:
+                print(f"Error processing task {task_id}: {ex}", file=sys.stderr)
+                answer = f"Error during model generation: {ex}"
+                model = "error"
+                remote_tokens = 0
+                
+            results.append({
+                "task_id": task_id,
+                "answer": answer
+            })
+            metrics.append({
+                "task_id": task_id,
+                "model": model,
+                "remote_tokens_used": remote_tokens
+            })
+            
+            try:
+                write_json_atomically(output_file, results)
+                write_json_atomically(output_file.parent / "metrics.json", metrics)
+            except Exception as ex2:
+                print(f"Warning: Failed to write intermediate results atomically: {ex2}", file=sys.stderr)
             
     print("Velora AI Agent execution complete.")
 

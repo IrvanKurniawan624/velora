@@ -525,3 +525,232 @@ class AgentService:
         self.save_to_cache(prompt, remote_response)
         return remote_response
 
+    def process_all_tasks(self, tasks: list) -> tuple[list, list]:
+        """
+        Process a list of tasks, using cache, deterministic solvers, and batching to minimize Fireworks token usage.
+        """
+        results = []
+        metrics = []
+        
+        # 1. Resolve as many tasks as possible using cache and deterministic solvers (0 remote tokens)
+        pending_escalation = [] # list of (task, task_type)
+        
+        for task in tasks:
+            task_id = task.get("task_id")
+            prompt = task.get("prompt")
+            if not task_id or not prompt:
+                continue
+                
+            # Check cache
+            cached_response = self.lookup_fuzzy_cache(prompt, threshold=0.95)
+            if cached_response:
+                logger.info(f"Task {task_id} resolved via cache.")
+                results.append({"task_id": task_id, "answer": cached_response.content})
+                metrics.append({
+                    "task_id": task_id,
+                    "model": cached_response.model,
+                    "remote_tokens_used": 0
+                })
+                continue
+                
+            # Check deterministic solvers
+            task_type = self.classify_task(prompt)
+            from app.services.solvers import solve_deterministic
+            solver_res = solve_deterministic(prompt, task_type)
+            if solver_res:
+                answer, confidence = solver_res
+                if confidence >= 0.75:
+                    logger.info(f"Task {task_id} resolved via deterministic solver.")
+                    clean_ans = self.clean_and_extract_content(answer, task_type, prompt)
+                    results.append({"task_id": task_id, "answer": clean_ans})
+                    metrics.append({
+                        "task_id": task_id,
+                        "model": "deterministic_solver",
+                        "remote_tokens_used": 0
+                    })
+                    # Save to cache
+                    self.save_to_cache(prompt, ChatResponse(content=clean_ans, model="deterministic_solver", confidence=confidence, remote_tokens_used=0))
+                    continue
+                    
+            # If not resolved, add to pending escalations
+            pending_escalation.append((task, task_type))
+            
+        if not pending_escalation:
+            return results, metrics
+            
+        # 2. Group pending escalations by direct vs reasoning to prevent batching interference
+        # Categories: Factual, NER, Summarise, Sentiment, Math -> "direct"
+        # Categories: Logic, Code -> "reasoning"
+        groups = {"direct": [], "reasoning": []}
+        for task, task_type in pending_escalation:
+            key = "reasoning" if task_type in ("logic", "code") else "direct"
+            groups[key].append((task, task_type))
+            
+        # 3. Process each group in batches (max 10 tasks per batch)
+        max_batch_size = 10
+        for group_key, chunk_list in groups.items():
+            for i in range(0, len(chunk_list), max_batch_size):
+                chunk = chunk_list[i:i+max_batch_size]
+                
+                # Run batched remote call
+                batch_results, batch_metrics = self._process_batch(chunk, group_key)
+                results.extend(batch_results)
+                metrics.extend(batch_metrics)
+                
+        # 4. Sort results and metrics to match original task order
+        task_id_order = [t.get("task_id") for t in tasks if t.get("task_id")]
+        sorted_results = []
+        sorted_metrics = []
+        for tid in task_id_order:
+            res_item = next((r for r in results if r["task_id"] == tid), None)
+            met_item = next((m for m in metrics if m["task_id"] == tid), None)
+            if res_item:
+                sorted_results.append(res_item)
+            if met_item:
+                sorted_metrics.append(met_item)
+                
+        return sorted_results, sorted_metrics
+
+    def _parse_batch_answers(self, text: str, ids: list[str]) -> dict[str, str]:
+        """
+        Parses batched response. Tries JSON extraction first, fallback to [id] marker segmentation.
+        """
+        m = re.search(r"\{.*\}", text, re.S)
+        if m:
+            try:
+                data = json.loads(m.group(0))
+                return {str(k): str(v).strip() for k, v in data.items() if str(v).strip()}
+            except Exception:
+                pass
+                
+        # Regex marker parsing fallback
+        markers = []
+        for tid in ids:
+            for mm in re.finditer(re.escape(f"[{tid}]"), text):
+                markers.append((mm.start(), mm.end(), tid))
+        markers.sort()
+        
+        answers = {}
+        for i, (start, end, tid) in enumerate(markers):
+            stop = markers[i + 1][0] if i + 1 < len(markers) else len(text)
+            seg = text[end:stop].strip()
+            # Clean segment from standard prefixes
+            seg = re.sub(r"^[\s*:>\-]*(\([a-z_ ]+\))?[\s*:>\-]*", "", seg).strip()
+            if seg:
+                answers[tid] = seg
+        return answers
+
+    def _process_batch(self, chunk: list, group_key: str) -> tuple[list, list]:
+        """
+        Query Fireworks API using a batched prompt, fallback to individual remote calls on failure.
+        """
+        results = []
+        metrics = []
+        
+        # Build batched prompts
+        # System instructions
+        system_prompt = (
+            "You are a precise assistant. Answer concise, direct answers in English.\n"
+            "You are given multiple independent tasks tagged [id] (category).\n"
+            "Return ONLY a single valid JSON object mapping each [id] to its answer.\n"
+            "Example format:\n"
+            '{\n  "T01": "answer for T01",\n  "T02": "answer for T02"\n}\n'
+            "Strictly follow category rules:\n"
+            "- code: Return ONLY Python code. No comments/explanations.\n"
+            "- math: Return only the final numeric result/number.\n"
+            "- sentiment: Return only mixed/positive/negative/neutral label with a one-sentence reason.\n"
+            "- ner: Extract entity - type list.\n"
+            "- summarise: Respect requested sentence or word limits exactly."
+        )
+        
+        # User prompt
+        user_prompts = []
+        for task, task_type in chunk:
+            task_id = task.get("task_id")
+            # We compress prompt first to save input tokens!
+            from app.utils import compress_prompt
+            compressed = compress_prompt(task.get("prompt"), task_type)
+            user_prompts.append(f"[{task_id}] ({task_type}) {compressed}")
+        user_prompt = "\n\n".join(user_prompts)
+        
+        # Determine model
+        # Choose kimi-k2p7-code for reasoning batches, minimax-m3 for direct batches
+        model = "accounts/fireworks/models/kimi-k2p7-code" if group_key == "reasoning" else "accounts/fireworks/models/minimax-m3"
+        for m in self.allowed_models:
+            if ("kimi-k2p7-code" in m and group_key == "reasoning") or ("minimax-m3" in m and group_key == "direct"):
+                model = m
+                break
+        
+        batch_success = False
+        answers = {}
+        tokens_per_task = 0
+        
+        try:
+            logger.info(f"Escalating batch of {len(chunk)} tasks to remote model {model}...")
+            response = self.remote_client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=0.1,
+                max_tokens=4000
+            )
+            text = response.choices[0].message.content or ""
+            text = re.sub(r"<think>.*?(?:</think>|$)", "", text, flags=re.DOTALL).strip()
+            
+            usage = getattr(response, "usage", None)
+            total_tokens = usage.total_tokens if usage else 0
+            tokens_per_task = total_tokens // len(chunk)
+            
+            # Parse batch answers
+            answers = self._parse_batch_answers(text, [t[0].get("task_id") for t in chunk])
+            
+            # Check if all tasks in the chunk have answers in parsed result
+            if all(t[0].get("task_id") in answers for t in chunk):
+                batch_success = True
+                logger.info(f"Successfully processed batch of {len(chunk)} tasks.")
+            else:
+                missing = [t[0].get("task_id") for t in chunk if t[0].get("task_id") not in answers]
+                logger.warning(f"Batch response missing answers for tasks: {missing}. Falling back to individual calls.")
+        except Exception as e:
+            logger.warning(f"Batch remote call failed: {e}. Falling back to individual calls.")
+            
+        if batch_success:
+            for task, task_type in chunk:
+                task_id = task.get("task_id")
+                ans = answers[task_id]
+                clean_ans = self.clean_and_extract_content(ans, task_type, task.get("prompt"))
+                results.append({"task_id": task_id, "answer": clean_ans})
+                metrics.append({
+                    "task_id": task_id,
+                    "model": model,
+                    "remote_tokens_used": tokens_per_task
+                })
+                # Save to cache
+                self.save_to_cache(task.get("prompt"), ChatResponse(content=clean_ans, model=model, confidence=1.0, remote_tokens_used=tokens_per_task))
+        else:
+            # Fallback to individual remote calls
+            logger.info("Falling back to individual remote calls for batch tasks...")
+            for task, task_type in chunk:
+                task_id = task.get("task_id")
+                prompt = task.get("prompt")
+                try:
+                    resp = self.process_task(prompt)
+                    results.append({"task_id": task_id, "answer": resp.content})
+                    metrics.append({
+                        "task_id": task_id,
+                        "model": resp.model,
+                        "remote_tokens_used": resp.remote_tokens_used
+                    })
+                except Exception as e:
+                    logger.error(f"Fallback task {task_id} failed: {e}")
+                    results.append({"task_id": task_id, "answer": "Unable to answer."})
+                    metrics.append({
+                        "task_id": task_id,
+                        "model": "error",
+                        "remote_tokens_used": 0
+                    })
+                    
+        return results, metrics
+
