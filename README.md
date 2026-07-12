@@ -1,135 +1,178 @@
-# Velora AI Inference Pipeline
+# Velora — Zero-Token Local-First Agent (AMD Hackathon ACT II, Track 1)
 
-A lightweight production-ready AI inference pipeline built with Python, `uv`, and local/remote LLM routing.
-
-## Project Overview
-
-This repository contains the **Velora Hybrid Speculative Cache Agent**—our peak submission for the AMD Hackathon. It implements a confidence-cascaded speculative routing pipeline paired with a persistent fuzzy semantic cache. 
-
-On benchmark tasks, it achieves **100.0% overall accuracy** while saving **64.9% remote token consumption** and executing in **0.59 seconds** (99% faster).
-
-### Overall Scorecard (27 tasks, Track 1 Sandbox)
-
-| Strategy | Baseline Acc | Optimized Acc | Δ Accuracy | 80% Gate | Opt. Time | Token Savings |
-|----------|:------------:|:-------------:|:----------:|:--------:|----------:|:-------------:|
-| **Hybrid (Speculative + Cache)** | **100.0%** | **100.0%** | **0.0%** | **✅ PASS** | **0.59s** | **64.9%** |
-| **Fuzzy Cache Only** | 88.9% | 92.6% | +3.7% | ✅ PASS | 44.8s | ~0% |
-| **Speculative Routing Only** | 92.6% | 88.9% | -3.7% | ✅ PASS | 339.9s | -30.2% |
-| **JIT LinUCB Router** | 66.7% | 70.4% | +3.7% | ❌ FAIL | 252.9s | ~0% |
-| **Rule-Based Classifier** | 63.0% | 63.0% | 0.0% | ❌ FAIL | 258.3s | -8.6% |
-
-![Benchmark Result Graph](docs/img/benchmark_result.png)
-
-> 💡 **Why is the Hybrid Strategy so fast (0.59s)?**
-> The pre-hydrated cache database (`benchmarks/agent_cache.json`) is committed directly to the Git repository. On tasks it has seen before, it gets instant **100% fuzzy cache hits** and completes the entire test suite in under 1 second using **0 remote tokens**.
-> 
-> 🛡️ **What happens on different/unseen grading questions?**
-> If the grader runs new prompts, the fuzzy cache will miss. The pipeline gracefully falls back to the **Speculative Routing pipeline** (offloading extraction, classification, and code tasks locally to Gemma 2B and escalating complex queries to Fireworks APIs). On a clean run, it takes **~300 seconds** (well within the 10-minute timeout) and secures **~30% remote token savings** while staying well above the **80% accuracy gate**.
-
-## Core Architecture & Optimizations
-
-1. **Persistent Fuzzy Caching**: Implements `difflib.SequenceMatcher` fuzzy lookup at a `0.95` similarity threshold. Baseline Fireworks answers are stored in `benchmarks/agent_cache.json` via the Docker volume mount, allowing the optimized run to load them instantly (0 remote tokens, 0.59s runtime).
-2. **Anti-Yapping Prompt Formatting**: Appends strict formatting instructions to prompts for both local and remote models (e.g. `Return ONLY the direct Python code block. No explanations.`). This dramatically reduces remote output tokens.
-3. **Robust Code Block Extractor**: Uses indentation-based parsing to isolate Python functions from conversational prose when models output thinking steps, resolving syntax compilation failures.
-4. **Diacritic & Keyword Normalization**: Normalizes non-ASCII characters (e.g., `Rømer` -> `Romer`) and injects missing terms to align with strict grader keyword checks.
-5. **Gemma 2 System Prompt Safety**: Pre-merges system prompt instructions into the user prompt to prevent `llama-cpp-python` crashes with the local Gemma model.
-
-## Tech Stack
-
-- **Language:** Python 3.12+
-- **Package Manager:** [uv](https://github.com/astral-sh/uv)
-- **Local Model:** Gemma 2B Q4 (`gemma-2-2b-it-q4_k_m.gguf`) via `llama-cpp-python`
-- **Remote Model:** Fireworks API (Minimax M3 for simple tasks, Kimi 2.7 for complex tasks)
-- **Core Libraries:** `pydantic`, `pydantic-settings`, `httpx`, `openai`
-- **Development Tooling:** `pytest`, `ruff`
-
-## Folder Structure
+A general-purpose AI agent for the AMD Developer Hackathon ACT II **Track 1
+(Hybrid Token-Efficient Routing Agent)**. It answers all eight task categories
+**entirely inside the container** with a local Qwen2.5-3B-Instruct model
+(llama.cpp) plus deterministic verification — spending **zero Fireworks
+tokens** in its default mode, the best possible token score, while clearing
+the accuracy gate.
 
 ```
-.
-├── app/                  # Main application package
-│   ├── core/             # Core logic and base orchestrators
-│   ├── models/           # Custom model wrappers
-│   ├── schemas/          # Pydantic schemas for request/response
-│   ├── services/         # External service integrations
-│   ├── utils/            # Helper utilities (file IO, logging)
-│   ├── prompts/          # Prompt templates and management
-│   ├── config.py         # Configuration using pydantic-settings
-│   ├── main.py           # Application entry point
-│   └── __init__.py
-├── docs/                 # Documentation files
-├── benchmarks/           # Model evaluation and benchmark datasets/tests
-├── input/                # Task inputs (e.g., tasks.json)
-├── output/               # Output results (e.g., results.json)
-├── tests/                # Pytest test suite
-├── .env.example          # Environment variables example template
-├── .gitignore            # Git ignore file
-├── pyproject.toml        # uv project configuration
-└── README.md             # Project documentation
+/input/tasks.json
+      │
+      ▼
+┌──────────────┐   regex, 0 cost
+│  classifier   │──────────────► category (factual / math / sentiment /
+└──────────────┘                summarize / NER / code-debug / code-gen / logic)
+      │
+      ▼
+┌───────────────────────────────────────────────────────────┐
+│ Pass 1 — bank a best-shot answer for every task           │
+│   • math  : LLM writes a tiny Python program → executed   │
+│             twice independently → results must agree      │
+│   • code  : generated/fixed code is compiled AND run,     │
+│             then differential-fuzz-checked vs a reference │
+│   • logic : executable brute-force enumeration + truth-   │
+│             table decomposition + cross-checked CoT       │
+│   • facts : offline capitals gazetteer + 2 independent    │
+│             answers cross-checked for agreement           │
+│   • text  : sentiment/NER/summarize with format           │
+│             constraints enforced programmatically         │
+├───────────────────────────────────────────────────────────┤
+│ Pass 2 — remaining time re-verifies low-confidence tasks  │
+│   (MODE=hybrid only: escalate still-low-conf to Fireworks)│
+├───────────────────────────────────────────────────────────┤
+│ Watchdog — guarantees valid, complete results.json and    │
+│            exit 0 well before the 10-minute limit         │
+└───────────────────────────────────────────────────────────┘
+      │
+      ▼
+/output/results.json
 ```
 
-## Setup Instructions
+## Why local-only (this branch: `feat/zero-api-local`)
 
-Ensure you have Python 3.12+ and `uv` installed.
+Track 1 scores by **remote tokens only** — local model inference inside the
+container counts as **zero** toward the token score. The optimal strategy is
+therefore to do everything locally and escalate to Fireworks only when a task
+cannot be independently verified. This branch makes local-only the default
+(`MODE=zero`) and keeps `MODE=hybrid` as an escape hatch.
 
-1. **Clone the Repository:**
-   ```bash
-   git clone <repo-url>
-   cd velora
-   ```
+It retires the earlier speculative-routing + persistent fuzzy-cache pipeline
+(`app/`), which (a) committed a pre-hydrated answer cache that violated the
+**"No Hardcoding/Caching"** rule and (b) defaulted most tasks to remote,
+producing ~6k tokens on the real (unseen-variant) evaluation. The engine is
+now the proven ZeroFire design: **verification-based local solving, no answer
+cache** — arithmetic/logic correctness comes from executing and cross-checking
+model-written code, not from the 3B's mental reasoning.
 
-2. **Initialize Environment:**
-   Create `.env` file from the example:
-   ```bash
-   cp .env.example .env
-   ```
-   Add your API keys to the `.env` file:
-   ```env
-   FIREWORKS_API_KEY=your_key_here
-   FIREWORKS_BASE_URL=https://api.fireworks.ai/inference/v1
-   ```
+## Local-context optimization
 
-3. **Install Dependencies:**
-   Create a virtual environment and install all packages using `uv`:
-   ```bash
-   uv sync
-   ```
+The agent is tuned to squeeze accuracy out of a 3B model under the 4 GB / 2 vCPU
+judge budget:
 
-## How to Run
+- **Context window** — `LLAMA_CTX=4096` (env-tunable), enough for long-passage
+  summarisation/NER. Served by `llama-server` as a subprocess, not in-process.
+- **KV-cache reuse** — `--cache-reuse 256`. The 2-pass design and the
+  math/logic voting ballots re-issue the same task prompt repeatedly; cache
+  reuse makes repeats near-instant — large wall-clock savings under the
+  10-minute cap.
+- **Verification over guessing** — math is solved by executing Python twice
+  and majority-voting (programs weight 2, CoT weight 1); code is compiled, run,
+  and differential-fuzz-checked against an independent reference; logic uses
+  executable enumeration + truth-table decomposition. The model writes code;
+  the interpreter guarantees correctness.
+- **Per-category prompting** — tight, anti-yapping system prompts with firm
+  format anchors (NER `Entity - Type` one-per-line, code-gen single
+  ```` ```python ```` fence + asserts, math `ANSWER: <n>`).
+- **2-pass pacing** — Pass 1 banks a best-shot answer for every task (cheap
+  categories first); Pass 2 spends remaining wall-clock re-verifying
+  low-confidence tasks with the executable solvers. A watchdog flushes and
+  exits 0 at `HARD_DEADLINE`.
+- **Offline general-knowledge RAG** — a capitals gazetteer (country → capital +
+  nearby body of water) answers capital questions deterministically, beating a
+  3B's spotty geography. General reference data only — no task-specific answers.
+- **JSON output on demand** — when a task explicitly requests JSON
+  (sentiment/summarise/NER), the handler's plain-text answer is repackaged into
+  the requested JSON shape (`{"sentiment", "reason"}`, `{"bullets": [...]}`,
+  `{"PERSON": [...], ...}` grouped by the requested keys); the proven
+  plain-text path is preserved for every other prompt.
 
-### Run the Application
+## Container contract (Track 1)
 
-You can execute the pipeline entry point:
+- Reads `/input/tasks.json`, writes `/output/results.json`
+  (`[{"task_id": ..., "answer": ...}]`), exits 0.
+- `linux/amd64`, starts in seconds, finishes well inside the 10-minute cap; a
+  watchdog flushes results and exits 0 even in worst-case stalls.
+- Env consumed at runtime: `FIREWORKS_API_KEY`, `FIREWORKS_BASE_URL`,
+  `ALLOWED_MODELS` (hybrid mode only; zero mode ignores them) plus
+  `LLAMA_BIN`, `MODEL_PATH`, `LLAMA_THREADS`, `LLAMA_CTX`, `MODE`,
+  `SOFT_DEADLINE`, `HARD_DEADLINE`.
+
+## Modes
+
+- **`MODE=zero` (default, image tag `:zero`)** — never calls Fireworks. Local
+  models are explicitly a valid strategy; local tokens score 0. This is the
+  submission.
+- **`MODE=hybrid` (image tag `:latest`)** — identical pipeline, but tasks whose
+  answers could not be independently verified escalate — one terse call each —
+  to the cheapest suitable model from `ALLOWED_MODELS` via `FIREWORKS_BASE_URL`
+  (env-injected, never hardcoded), with `reasoning_effort` disabled and
+  `max_tokens` capped.
+
+## Run it (Docker)
+
 ```bash
-uv run python -m app.main
+docker buildx build --platform linux/amd64 --tag velora-agent:zero --build-arg MODE=zero .
+docker run --rm --cpus=2 --memory=4g \
+  -v /path/to/input:/input:ro -v /path/to/output:/output \
+  velora-agent:zero
 ```
 
-### Run Tests
+`/path/to/input/tasks.json`:
 
-Run the test suite using pytest:
+```json
+[ { "task_id": "t1", "prompt": "A store has 240 items. It sells 15% on Monday and 60 more on Tuesday. How many items remain?" } ]
+```
+
+## Develop locally (no Docker)
+
 ```bash
-uv run pytest
+# 1) download a llama.cpp release for your OS into tools/llama/
+# 2) download the model:
+#    https://huggingface.co/bartowski/Qwen2.5-3B-Instruct-GGUF (Q4_K_M)
+#    into models/Qwen2.5-3B-Instruct-Q4_K_M.gguf
+python eval/run_local.py                      # runs the variant local eval
+python eval/run_local.py eval/practice_tasks.json
+python eval/run_local.py input/tasks.json     # velora's 19-task set
 ```
 
-### Run Linter and Formatter
+`eval/run_local.py` spawns the server itself, or reuses one you started when
+`LLAMA_URL` is set. Auto-checks math/logic/fact variants against expected
+values; prints the rest for eyeballing. Runs with `MODE=zero` by default and
+emits **zero** Fireworks calls.
 
-Format and lint the codebase with Ruff:
-```bash
-uv run ruff check
-uv run ruff format
+## CI
+
+`.github/workflows/build.yml` builds the `linux/amd64` image on push to `main`
+(and on manual dispatch), pushes `velora-agent:{zero,latest,<sha>}` to GHCR,
+then runs the practice task set inside the freshly built `:zero` image under
+judge-like limits (`--cpus=2 --memory=4g`) and validates the output schema.
+
+## Repository layout
+
+```
+agent/            the agent (stdlib-only Python)
+  main.py         orchestrator: 2-pass pacing, watchdog, atomic flushes
+  classify.py     zero-cost category router
+  solvers.py      per-category handlers + verification
+  capitals.py     offline country → capital + body-of-water gazetteer
+  local_llm.py    llama-server lifecycle + OpenAI-compatible client
+  pyexec.py       sandboxed execution of model-written Python
+  fireworks.py    hybrid-mode escalation (token-accounted; zero mode never imports it)
+eval/             practice tasks, checkable variants, local harness (run_local.py)
+Dockerfile        3-stage build: llama.cpp release + GGUF weights + slim runtime
+.github/          CI: build linux/amd64 + smoke test under judge limits
 ```
 
-### Run Local Agent Benchmark Simulator
+## Tech stack
 
-Simulate the Track 1 grading sandbox (including the 80% accuracy gate) over the 19 standard evaluation tasks:
-```bash
-uv run python benchmarks/run_benchmark.py
-```
-For detailed instructions on setup, running pytest evaluations, and using the web logs dashboard, see the [Benchmarks Guide](docs/benchmarks_guide.md).
-
-## Docker Support
-
-We provide full support for packaging and running the agent inside a Docker container matching the grading sandbox limits (4 GB RAM, 2 vCPUs). 
-
-For step-by-step instructions on building the image, bundling the quantized local model weights, and running local verification checks, refer to the [Docker Guide](docs/docker_guide.md).
-
+- **Language:** Python 3.12, **stdlib only** at runtime (urllib, subprocess,
+  ast, re, difflib, threading) — no `llama-cpp-python`, `openai`, or `pydantic`
+  in the image.
+- **Local model:** Qwen2.5-3B-Instruct Q4_K_M (~1.9 GB) served by `llama-server`
+  with 2 threads — sized for the 4 GB RAM / 2 vCPU judging environment.
+- **Remote (hybrid only):** Fireworks AI via `FIREWORKS_BASE_URL`, models read
+  from `ALLOWED_MODELS` at runtime.
+- **Dev tooling:** `pytest`, `ruff` (the vendored `agent/` + `eval/` ports are
+  excluded from ruff as proven code).
