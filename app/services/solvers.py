@@ -274,31 +274,45 @@ def solve_math_via_code(prompt: str, local_client) -> tuple:
     from app.services.pyexec import run_python
     
     sys_prompt = (
-        "You convert word problems into Python. Write a minimal Python 3 program "
-        "that computes the requested result and prints ONLY the final value with print(). "
-        "Integer results must print as integers. Output ONLY the raw Python code. "
-        "No explanations, no markdown comments, no conversational text."
+        "You convert word problems into Python. Write a minimal Python 3 expression "
+        "or program that computes the requested result. If a simple math expression suffices, "
+        "output ONLY the math expression (e.g. 2400 - 2400 * 0.37 + 800 - 640). If variables "
+        "or loops are needed, write a full program that prints the result with print(). "
+        "Output ONLY the python code or math expression. No other text."
     )
     
+    def evaluate_output(output_content: str):
+        c = extract_code(output_content)
+        # Try safe eval first
+        try:
+            val = _safe_eval(c)
+            return _fmt(val)
+        except Exception:
+            pass
+            
+        # Try running as python script
+        ok, out, err = run_python(c)
+        if ok and out.strip():
+            return out.strip()
+        return None
+
     try:
         res1 = local_client.generate(f"Prompt: {prompt}", system_prompt=sys_prompt, max_tokens=220)
-        code1 = extract_code(res1.content)
-        ok1, out1, err1 = run_python(code1)
+        val1 = evaluate_output(res1.content)
     except Exception:
-        ok1 = False
+        val1 = None
         
-    if not ok1 or not out1.strip():
+    if not val1:
         return None
         
     try:
-        res2 = local_client.generate(f"Prompt: {prompt}", system_prompt=sys_prompt + " Solve using a slightly different variable naming style.", max_tokens=220)
-        code2 = extract_code(res2.content)
-        ok2, out2, err2 = run_python(code2)
+        res2 = local_client.generate(f"Prompt: {prompt}", system_prompt=sys_prompt + " Double check the calculation steps.", max_tokens=220)
+        val2 = evaluate_output(res2.content)
     except Exception:
-        ok2 = False
+        val2 = None
         
-    if ok2 and out2.strip() == out1.strip():
-        return out1.strip(), 0.95
+    if val2 and val2 == val1:
+        return val1, 0.95
         
     return None
 
