@@ -17,6 +17,7 @@ class AgentService:
         self.settings = settings
         self.self_check = self_check
         
+        self.use_local_cascade = os.getenv("USE_LOCAL_CASCADE", str(settings.use_local_cascade)).lower() == "true"
         # Initialize LocalClient with GGUF path
         self.local_client = LocalClient(model_path=settings.local_model_path)
         
@@ -430,10 +431,38 @@ class AgentService:
             
         logger.info(f"Prompt compressed. Original: {len(prompt)} chars -> Compressed & Formatted: {len(compressed_prompt)} chars.")
 
-        # 3. Fast-track all cache misses directly to the appropriate remote model.
-        # This guarantees high correctness (to clear the 80% accuracy gate) and avoids the model loading
-        # and inference CPU overhead of Gemma 2B which leads to container timeouts on the grading VM.
-        logger.info(f"Task type '{task_type}' fast-tracked directly to remote model to ensure accuracy.")
+        # 3. Check if we should attempt local cascade or fast-track directly
+        if self.use_local_cascade and task_type in ("summarise", "factual"):
+            from app.services.gate import score_local_response
+            try:
+                logger.info("Attempting local inference for sequential task...")
+                local_response = self.local_client.generate(compressed_prompt, max_tokens=160, task_type=task_type)
+                local_clean = self.clean_and_extract_content(local_response.content, task_type, prompt)
+                score = score_local_response(prompt, local_clean, task_type)
+                
+                thresholds = {
+                    "sentiment": 0.45,
+                    "summarise": 0.45,
+                    "ner": 0.50,
+                    "factual": 0.55,
+                    "math": 0.80,
+                    "logic": 0.80,
+                    "code": 0.70
+                }
+                threshold = thresholds.get(task_type, 0.60)
+                
+                if score >= threshold:
+                    logger.info(f"Sequential task resolved locally (Score: {score:.2f} >= Threshold: {threshold:.2f}).")
+                    resp = ChatResponse(content=local_clean, model=f"{self.settings.local_model_path} (LocalCascade)", confidence=score, remote_tokens_used=0)
+                    self.save_to_cache(prompt, resp)
+                    return resp
+                else:
+                    logger.info(f"Sequential task scored below threshold (Score: {score:.2f} < {threshold:.2f}). Escalating to remote.")
+            except Exception as e:
+                logger.warning(f"Local client sequential inference failed: {e}. Escalating to remote.")
+                
+        # 4. Escalate to remote Fireworks API
+        logger.info(f"Escalating sequential task to remote model due to config/cascade fallback.")
         remote_model = self.select_remote_model(task_type)
         remote_response = self.generate_remote(compressed_prompt, model=remote_model)
         remote_response.content = self.clean_and_extract_content(remote_response.content, task_type, prompt)
@@ -571,6 +600,61 @@ class AgentService:
                     # Save to cache
                     self.save_to_cache(prompt, ChatResponse(content=clean_ans, model="deterministic_solver", confidence=confidence, remote_tokens_used=0))
                     continue
+                    
+            # 2.5 Run local model inference and score it (if cascade is enabled)
+            if self.use_local_cascade and task_type in ("summarise", "factual"):
+                from app.services.gate import score_local_response
+                from app.utils import compress_prompt
+                
+                # Construct compressed prompt
+                compressed_prompt = compress_prompt(prompt, task_type)
+                prompt_lower = prompt.lower()
+                if task_type == "code":
+                    compressed_prompt += "\nReturn ONLY Python code block. No comments or explanations."
+                elif task_type in ["sentiment", "ner", "summarise"] and "json" in prompt_lower:
+                    compressed_prompt += "\nReturn ONLY raw JSON object. No explanations or markdown fences."
+                else:
+                    needs_explanation = any(k in prompt_lower for k in [
+                        "explain", "reason", "why", "describe", "difference", "summarize", "summarise", "summary", "label", "extract", "bullet"
+                    ])
+                    if needs_explanation:
+                        compressed_prompt += "\nReturn direct answer with requested details. No conversational filler or intro."
+                    else:
+                        compressed_prompt += "\nReturn ONLY direct answer. No intro or explanations."
+                        
+                try:
+                    logger.info(f"Task {task_id}: Attempting local inference...")
+                    local_response = self.local_client.generate(compressed_prompt, max_tokens=160, task_type=task_type)
+                    local_content = local_response.content
+                    local_clean = self.clean_and_extract_content(local_content, task_type, prompt)
+                    
+                    score = score_local_response(prompt, local_clean, task_type)
+                    
+                    thresholds = {
+                        "sentiment": 0.45,
+                        "summarise": 0.45,
+                        "ner": 0.50,
+                        "factual": 0.55,
+                        "math": 0.80,
+                        "logic": 0.80,
+                        "code": 0.70
+                    }
+                    threshold = thresholds.get(task_type, 0.60)
+                    
+                    if score >= threshold:
+                        logger.info(f"Task {task_id} resolved locally (Score: {score:.2f} >= Threshold: {threshold:.2f}).")
+                        results.append({"task_id": task_id, "answer": local_clean})
+                        metrics.append({
+                            "task_id": task_id,
+                            "model": f"{self.settings.local_model_path} (LocalCascade)",
+                            "remote_tokens_used": 0
+                        })
+                        self.save_to_cache(prompt, ChatResponse(content=local_clean, model=self.settings.local_model_path, confidence=score, remote_tokens_used=0))
+                        continue
+                    else:
+                        logger.info(f"Task {task_id} scored below threshold (Score: {score:.2f} < Threshold: {threshold:.2f}). Routing to Fireworks batch.")
+                except Exception as e:
+                    logger.warning(f"Local client inference failed for task {task_id}: {e}. Routing to Fireworks batch.")
                     
             # If not resolved, add to pending escalations
             pending_escalation.append((task, task_type))

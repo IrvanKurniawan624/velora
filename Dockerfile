@@ -35,9 +35,9 @@ COPY --from=builder /app/.venv /app/.venv
 # Setup grading volume mount points and model directory
 RUN mkdir -p /input /output /app/models
 
-# Download local Gemma 2B Q4_K_M GGUF model during build
-RUN curl -L -o /app/models/gemma-2-2b-it-q4_k_m.gguf \
-    https://huggingface.co/bartowski/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf
+# Download local Qwen 2.5 3B Q4_K_M GGUF model during build
+RUN curl -L -o /app/models/model.gguf \
+    https://huggingface.co/bartowski/Qwen2.5-3B-Instruct-GGUF/resolve/main/Qwen2.5-3B-Instruct-Q4_K_M.gguf
 
 # Copy codebase
 COPY . .

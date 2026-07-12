@@ -12,7 +12,8 @@ class Settings(BaseSettings):
     fireworks_api_key: SecretStr | None = None
     fireworks_base_url: str = "https://api.fireworks.ai/inference/v1"
     allowed_models: str = ""
-    local_model_path: str = "models/gemma-2-2b-it-q4_k_m.gguf"
+    local_model_path: str = "models/model.gguf"
     global_timeout_seconds: int = 600
     request_timeout_seconds: int = 30
+    use_local_cascade: bool = False
 
