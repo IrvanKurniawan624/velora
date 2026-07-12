@@ -172,10 +172,10 @@ def _facts_agree(ctx, q, a, b) -> bool:
     return v.strip().upper().startswith("Y")
 
 
-_PROG_SYS = ("You convert word problems into Python. Write a minimal Python 3 "
-             "program that computes the requested result and prints ONLY the final "
-             "value with print(). Integer results must print as integers. Use exact "
-             "arithmetic (integers or the fractions module) where possible. "
+_PROG_SYS = ("You convert word problems into Python. Write a simple, correct Python 3 "
+             "program that computes the requested result. Assign intermediate counts/percentages "
+             "to variables, compute the final requested value, and output it with print(). "
+             "Do not use complex index filtering or list comprehensions unless necessary. "
              "Output only the code. No markdown, no comments, no explanations.")
 
 
