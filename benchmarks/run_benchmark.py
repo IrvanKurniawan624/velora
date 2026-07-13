@@ -233,7 +233,10 @@ def run_docker(tasks, mode, image, env_file):
     )
     elapsed = time.time() - start
     remote_tokens = parse_remote_tokens(proc.stdout)
+    log_path = BENCHMARKS_DIR / f"{mode}_benchmark.log"
+    log_path.write_text(proc.stdout, encoding="utf-8")
     print(f"Docker exit code: {proc.returncode}, elapsed: {elapsed:.1f}s")
+    print(f"Full log: {log_path}")
     if not output_file.exists():
         print(proc.stdout)
         raise RuntimeError("No results.json produced")

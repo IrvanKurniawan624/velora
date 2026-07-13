@@ -370,8 +370,8 @@ def solve_summarize(task, ctx):
                  task, temperature=0.0, max_tokens=170)
     if not a:
         return {"answer": "", "conf": 0.2, "cat": "summarize"}
-    conf = 0.85
-    
+    conf = 0.25
+
     n_b = _target_bullets(task)
     if n_b:
         lines = [ln.strip().lstrip("-*• ").strip() for ln in a.splitlines() if ln.strip()]
@@ -506,7 +506,7 @@ def solve_ner(task, ctx):
         if k and k not in seen:
             seen.add(k)
             out.append(ln)
-    return {"answer": "\n".join(out), "conf": 0.85, "cat": "ner"}
+    return {"answer": "\n".join(out), "conf": 0.25, "cat": "ner"}
 
 
 def _merge_adjacent_entities(lines, source):
