@@ -179,14 +179,16 @@ docker run --rm --cpus=2 --memory=4g \
 ## Repository layout
 
 ```
-agent/            the agent (stdlib-only Python)
-  main.py         orchestrator: 2-pass pacing, watchdog, atomic flushes
-  classify.py     zero-cost category router
+app/              the agent (stdlib-only Python)
+  main.py         orchestrator: 2-pass pacing, watchdog, atomic flushes, 2 modes
+  router.py       zero-cost category router
   solvers.py      per-category handlers + verification
-  capitals.py     offline country → capital + body-of-water gazetteer
-  local_llm.py    llama-server lifecycle + OpenAI-compatible client
-  pyexec.py       sandboxed execution of model-written Python
-  fireworks.py    hybrid-mode escalation (token-accounted; zero mode never imports it)
+  gazetteer.py    offline country → capital + body-of-water gazetteer
+  local_model.py  llama-server lifecycle + OpenAI-compatible client
+  sandbox.py      sandboxed execution of model-written Python
+  remote.py       hybrid-mode escalation (token-accounted; zero mode never imports it)
+  prompt_compress.py  optional remote-prompt compression (COMPRESS_REMOTE=1)
+  quality.py      answer sanity gate (degenerate/refusal/non-Latin detection)
 Dockerfile        3-stage build: llama.cpp release + GGUF weights + slim runtime
 .github/          CI: build linux/amd64 + smoke test under judge limits
 ```

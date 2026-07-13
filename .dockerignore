@@ -39,9 +39,7 @@ CLAUDE.md
 AGENTS.md
 synapse.config.json
 
-# Retired engine + project metadata. The Dockerfile COPYs only agent/, so none
-# of the below enter the image — listed here to keep the build context lean.
-app/
+# Dev-only metadata not COPYed into the image — listed to keep the build context lean.
 .github/
 pyproject.toml
 uv.lock

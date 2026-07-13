@@ -1,8 +1,8 @@
 """Tiny offline gazetteer: country -> (capital, nearby body of water).
 
 Legitimate local RAG per the participant guide ("open-source, fine-tuned,
-RAG-based" in-house approaches). Only well-established facts. Used by the
-factual handler when the question matches the capital/water pattern; the
+RAG-based" in-house approaches). Only well-established facts. The factual
+handler consults this when a question matches the capital/water pattern; the
 local model handles everything else.
 """
 
@@ -139,7 +139,7 @@ CAPITALS = {
 
 import re
 
-_DISPLAY = {
+_DISPLAY_NAME = {
     "usa": "the United States",
     "united states": "the United States",
     "uk": "the United Kingdom",
@@ -155,15 +155,16 @@ _DISPLAY = {
 }
 
 
-def lookup_capital(question: str):
+def find_capital(question: str):
     """If the question asks about a country's capital, return
-    (country_display, capital, water) else None."""
+    (country_display, capital, water); otherwise return None."""
     q = question.lower()
     if "capital" not in q:
         return None
+    # match longest country names first so "united states" wins over "states"
     for country in sorted(CAPITALS, key=len, reverse=True):
         if re.search(rf"\b{re.escape(country)}\b", q):
             cap, water = CAPITALS[country]
-            disp = _DISPLAY.get(country, country.title())
+            disp = _DISPLAY_NAME.get(country, country.title())
             return disp, cap, water
     return None

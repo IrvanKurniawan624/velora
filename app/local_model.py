@@ -1,6 +1,6 @@
 """llama.cpp server lifecycle + minimal OpenAI-compatible chat client.
 
-Zero external dependencies (urllib only) so the runtime image stays lean.
+Only the urllib stdlib is used so the runtime image stays lean (no openai/llama-cpp-python packages).
 """
 import json
 import os
@@ -11,7 +11,13 @@ import urllib.error
 import urllib.request
 
 
-class LocalLLM:
+class LocalModel:
+    """Owns a `llama-server` subprocess and speaks its OpenAI-compatible API.
+
+    In local dev, set LLAMA_URL to attach to an already-running server instead of
+    spawning one.
+    """
+
     def __init__(self, bin_path=None, model_path=None, port=8091, threads=None,
                  ctx=4096, base_url=None):
         self.bin_path = bin_path or os.environ.get("LLAMA_BIN", "/opt/llama/llama-server")
@@ -19,7 +25,7 @@ class LocalLLM:
         self.port = int(os.environ.get("LLAMA_PORT", port))
         self.threads = int(threads or os.environ.get("LLAMA_THREADS", "2"))
         self.ctx = int(os.environ.get("LLAMA_CTX", ctx))
-        # If LLAMA_URL is set we attach to an already-running server (local dev).
+        # LLAMA_URL set => reuse an already-running server (local dev); else spawn one
         self.base_url = base_url or os.environ.get("LLAMA_URL") or f"http://127.0.0.1:{self.port}"
         self.proc = None
         self.external = bool(os.environ.get("LLAMA_URL"))
@@ -40,10 +46,10 @@ class LocalLLM:
             "--no-webui",
             "--cache-reuse", "256",
         ]
-        log = sys.stderr
-        self.proc = subprocess.Popen(args, stdout=log, stderr=log)
+        self.proc = subprocess.Popen(args, stdout=sys.stderr, stderr=sys.stderr)
 
     def wait_ready(self, timeout=55.0) -> bool:
+        """Poll /health until the server responds 200 or the timeout expires."""
         deadline = time.time() + timeout
         url = f"{self.base_url}/health"
         while time.time() < deadline:
@@ -78,7 +84,7 @@ class LocalLLM:
                     resp = json.loads(r.read().decode("utf-8", "replace"))
                 return (resp["choices"][0]["message"]["content"] or "").strip()
             except Exception as e:
-                sys.stderr.write(f"[llm] chat attempt {attempt} failed: {e}\n")
+                sys.stderr.write(f"[local] chat attempt {attempt} failed: {e}\n")
                 time.sleep(0.5)
         return ""
 

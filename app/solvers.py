@@ -13,8 +13,8 @@ Handlers must never raise; they degrade to a best-effort answer.
 import re
 import sys
 
-from .capitals import lookup_capital
-from .pyexec import run_python
+from .gazetteer import find_capital
+from .sandbox import exec_sandboxed
 
 # ---------------------------------------------------------------- helpers
 
@@ -112,11 +112,11 @@ def _covers_all_parts(ctx, task, answer):
     return v.strip().upper().startswith("Y")
 
 
-def h_factual(task, ctx):
+def solve_factual(task, ctx):
     sysmsg = ("Answer the question accurately and directly in 1-3 short sentences, "
               "covering every part of it. No preamble.")
     # offline gazetteer beats a 3B's spotty geography
-    hit = lookup_capital(task)
+    hit = find_capital(task)
     if hit:
         disp, cap, water = hit
         ql = task.lower()
@@ -197,7 +197,7 @@ def _math_ballot(ctx, task, kind, temp, seed):
                     else:
                         lines[-1] = f"print({last_line})"
                         code = "\n".join(lines)
-        ok, out, _ = run_python(code) if code else (False, "", "")
+        ok, out, _ = exec_sandboxed(code) if code else (False, "", "")
         return last_number(out) if ok else None
     cot = ctx.chat("Solve the problem with brief step-by-step reasoning "
                    "(at most 6 short lines). End with one final line exactly: "
@@ -210,7 +210,7 @@ def _vote_key(v):
     return fmt_num(round(v, 9))
 
 
-def h_math(task, ctx):
+def solve_math(task, ctx):
     # majority voting over independent ballots: 2 programs, then CoT and more
     # samples until some value gets two votes
     # executed programs are categorically more reliable than a 3B's mental
@@ -308,7 +308,7 @@ def _aspect_list(s):
     return [p.strip() for p in s.split(";") if p.strip()]
 
 
-def h_sentiment(task, ctx):
+def solve_sentiment(task, ctx):
     ext = ctx.chat(
         "From the review/text in the task, extract the sentiment-bearing aspects. "
         "Reply in exactly this format (two lines):\n"
@@ -364,7 +364,7 @@ def _target_bullets(task):
     return int(m.group(1)) if m else None
 
 
-def h_summarize(task, ctx):
+def solve_summarize(task, ctx):
     a = ctx.chat("You are a precise summarizer. Follow the length/format constraint "
                  "stated in the task EXACTLY. Output only the summary, nothing else.",
                  task, temperature=0.0, max_tokens=170)
@@ -481,7 +481,7 @@ def _match_ner_casing(task, type_str):
     return std_val
 
 
-def h_ner(task, ctx):
+def solve_ner(task, ctx):
     sysmsg = ("Extract ALL named entities from the text given in the task and label "
               "each with its type: Person, Organization, Location, Date, Time, Event, "
               "Product, Money, Percent, or Other. Reply with one entity per line in "
@@ -614,7 +614,7 @@ def _differential_compare(code_a, code_b, fname, argsets):
         "    rows.append([repr(a), r1, r2])\n"
         "print(json.dumps(rows))\n"
     )
-    ok, out, err = run_python(script, timeout=10)
+    ok, out, err = exec_sandboxed(script, timeout=10)
     if not ok or not out:
         return 0, 0, ""
     try:
@@ -681,7 +681,7 @@ def _differential_verify(ctx, task, code, sysmsg, max_tok):
     return (ref, 0.6)
 
 
-def h_code_debug(task, ctx):
+def solve_code_debug(task, ctx):
     sysmsg = ("You are an expert Python debugger. The task contains buggy code. "
               "Reply with one sentence naming the bug, then the FULL corrected code "
               "in a ```python fence. Keep the original function name and signature.")
@@ -757,7 +757,7 @@ def _smoke_call(code: str):
     Returns None if it runs without raising, else the error text."""
     m = re.search(r"def\s+(\w+)\s*\(([^)]*)\)", code)
     if not m:
-        ok, _, err = run_python(code)
+        ok, _, err = exec_sandboxed(code)
         return None if ok else err[-300:]
     fname, params = m.group(1), m.group(2)
     args = []
@@ -773,13 +773,13 @@ def _smoke_call(code: str):
         else:
             args.append("3")
     harness = code + f"\n\nresult = {fname}({', '.join(args)})\nprint('SMOKE_OK', repr(result))\n"
-    ok, out, err = run_python(harness)
+    ok, out, err = exec_sandboxed(harness)
     if ok and "SMOKE_OK" in out:
         return None
     return (err or "no output")[-300:]
 
 
-def h_code_gen(task, ctx):
+def solve_code_gen(task, ctx):
     sysmsg = ("You are an expert Python developer. Write correct, clean Python for "
               "the request. Implement EXACTLY the stated requirements - do not add "
               "extra behavior beyond them. When the task names specific things to "
@@ -793,7 +793,7 @@ def h_code_gen(task, ctx):
     ok, err = compiles(code) if code else (False, "no code")
     ran = False
     if ok:
-        ran, out, rerr = run_python(code)
+        ran, out, rerr = exec_sandboxed(code)
         err = rerr[-300:] if not ran else ""
     if ok and ran:
         verified = _differential_verify(ctx, task, code, sysmsg, 420)
@@ -809,7 +809,7 @@ def h_code_gen(task, ctx):
         code2 = extract_code(reply2)
         ok2, _ = compiles(code2) if code2 else (False, "")
         if ok2:
-            ran2, _, _ = run_python(code2)
+            ran2, _, _ = exec_sandboxed(code2)
             if ran2:
                 return {"answer": _gen_answer(code2), "conf": 0.85, "cat": "code_gen"}
             return {"answer": _gen_answer(code2), "conf": 0.55, "cat": "code_gen"}
@@ -952,7 +952,7 @@ def _logic_enum_ballot(ctx, task):
         "truth value and keep the candidate where the count of true statements "
         "matches. Use itertools.permutations or simple loops. Output only code.",
         task, temperature=0.0, max_tokens=340, seed=42))
-    ok, out, _ = run_python(code) if code else (False, "", "")
+    ok, out, _ = exec_sandboxed(code) if code else (False, "", "")
     if not ok or not out:
         return None
     out = out.strip()
@@ -961,7 +961,7 @@ def _logic_enum_ballot(ctx, task):
     return out
 
 
-def h_logic(task, ctx):
+def solve_logic(task, ctx):
     """Weighted majority: an executed enumeration program votes with weight 2,
     sampled chains-of-thought with weight 1."""
     sysmsg = ("Solve the logic puzzle with brief careful reasoning (at most 8 short "
@@ -1099,13 +1099,13 @@ def _logic_answer(task, ans):
             "stated in the puzzle.")
 
 
-HANDLERS = {
-    "factual": h_factual,
-    "math": h_math,
-    "sentiment": h_sentiment,
-    "summarize": h_summarize,
-    "ner": h_ner,
-    "code_debug": h_code_debug,
-    "code_gen": h_code_gen,
-    "logic": h_logic,
+SOLVERS = {
+    "factual": solve_factual,
+    "math": solve_math,
+    "sentiment": solve_sentiment,
+    "summarize": solve_summarize,
+    "ner": solve_ner,
+    "code_debug": solve_code_debug,
+    "code_gen": solve_code_gen,
+    "logic": solve_logic,
 }

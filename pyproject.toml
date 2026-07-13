@@ -23,7 +23,7 @@ exclude = [
     # Vendored, proven engine ported from project/ (ZeroFire). Kept out of the
     # strict lint config so the faithful port isn't reformatted; logic changes
     # made during the local-context optimization pass are linted manually.
-    "agent",
+    "app",
 ]
 
 [tool.ruff.lint]

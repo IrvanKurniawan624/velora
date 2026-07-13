@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 libcur
     && rm -rf /var/lib/apt/lists/*
 COPY --from=llama /opt/llama /opt/llama
 COPY --from=model /models /models
-COPY agent /app/agent
+COPY app /app/app
 
 ARG MODE=zero
 ARG ESC_MAX=6
@@ -47,4 +47,4 @@ ENV LLAMA_BIN=/opt/llama/llama-server \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app
-ENTRYPOINT ["python", "-m", "agent.main"]
+ENTRYPOINT ["python", "-m", "app.main"]

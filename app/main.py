@@ -15,13 +15,14 @@ import sys
 import threading
 import time
 
-from .classify import classify
-from .local_llm import LocalLLM
-from .solvers import HANDLERS
+from .router import route
+from .local_model import LocalModel
+from .solvers import SOLVERS
+from .quality import sanity_check
 
 T0 = time.time()
 SOFT_DEADLINE = float(os.environ.get("SOFT_DEADLINE", "500"))   # stop optional work
-HARD_DEADLINE = float(os.environ.get("HARD_DEADLINE", "560"))   # flush + exit
+HARD_DEADLINE = float(os.environ.get("HARD_DEADLINE", "560"))   # write_results + exit
 INPUT_PATH = os.environ.get("INPUT_PATH", "/input/tasks.json")
 OUTPUT_PATH = os.environ.get("OUTPUT_PATH", "/output/results.json")
 MODE = os.environ.get("MODE", "zero").lower()
@@ -159,7 +160,7 @@ def log(msg):
     sys.stderr.write(f"[main +{elapsed():6.1f}s] {msg}\n")
 
 
-def flush():
+def write_results():
     with _lock:
         data = [{"task_id": tid, "answer": _results.get(tid, "") or
                  "Unable to determine within the time limit."}
@@ -171,7 +172,7 @@ def flush():
     os.replace(tmp, OUTPUT_PATH)
 
 
-def _watchdog():
+def watchdog():
     while True:
         left = HARD_DEADLINE - elapsed()
         if left <= 0:
@@ -179,12 +180,12 @@ def _watchdog():
         time.sleep(min(left, 1.0))
     log("watchdog fired: flushing and exiting")
     try:
-        flush()
+        write_results()
     finally:
         os._exit(0)
 
 
-class Ctx:
+class TaskContext:
     """What handlers see: chat access + time awareness.
 
     fast=True is the Pass-1 mode: only cheap verification (<=18s asks) is
@@ -217,7 +218,7 @@ _CAT_ORDER = ["sentiment", "ner", "summarize", "factual",
               "math", "code_gen", "code_debug", "logic"]
 
 
-def run():
+def run_agent():
     global _order
     try:
         with open(INPUT_PATH, "r", encoding="utf-8") as f:
@@ -226,22 +227,22 @@ def run():
     except Exception as e:
         log(f"FATAL: cannot read tasks: {e}")
         _order = []
-        flush()
+        write_results()
         return 0
 
     items = []
     for t in tasks:
         tid = str(t.get("task_id", "")) or f"task-{len(items)+1}"
         prompt = str(t.get("prompt", "") or "")
-        items.append({"id": tid, "prompt": prompt, "cat": classify(prompt)})
+        items.append({"id": tid, "prompt": prompt, "cat": route(prompt)})
     _order[:] = [it["id"] for it in items]
     log(f"loaded {len(items)} tasks: " +
         ", ".join(f"{it['id']}={it['cat']}" for it in items))
-    flush()  # valid (placeholder) file exists from the very start
+    write_results()  # valid (placeholder) file exists from the very start
 
-    threading.Thread(target=_watchdog, daemon=True).start()
+    threading.Thread(target=watchdog, daemon=True).start()
 
-    llm = LocalLLM()
+    llm = LocalModel()
     llm.start()
 
     # hybrid: escalate-first. Fireworks answers the hard categories in a
@@ -251,12 +252,12 @@ def run():
     if MODE == "hybrid":
         try:
             from concurrent.futures import ThreadPoolExecutor
-            from .fireworks import fw_answer
+            from .remote import remote_answer
             HARD = {"factual", "math", "logic", "code_debug", "code_gen"}
             hard_items = [it for it in items if it["cat"] in HARD][:ESC_MAX]
 
             def _esc(it):
-                text, tok = fw_answer(it["prompt"], it["cat"])
+                text, tok = remote_answer(it["prompt"], it["cat"])
                 return it["id"], text
 
             if hard_items:
@@ -267,17 +268,17 @@ def run():
                 log(f"escalate-first wave: {len(fw_done)}/{len(hard_items)} answered by Fireworks")
                 with _lock:
                     _results.update(fw_done)
-                flush()
+                write_results()
         except Exception as e:
             log(f"escalate-first error (falling back to local): {e}")
 
     if not llm.wait_ready(timeout=90):
         log("FATAL: local model failed to start")
-        flush()
+        write_results()
         return 0
     log("local model ready")
 
-    ctx = Ctx(llm)
+    ctx = TaskContext(llm)
     work = sorted((it for it in items if it["id"] not in fw_done),
                   key=lambda it: _CAT_ORDER.index(it["cat"]))
     confs = {it["id"]: 0.85 for it in items if it["id"] in fw_done}
@@ -289,7 +290,7 @@ def run():
         budget = max(12.0, (SOFT_DEADLINE * 0.62 - elapsed()) / remaining * 1.25)
         ctx.task_deadline = time.time() + budget
         try:
-            res = HANDLERS[it["cat"]](it["prompt"], ctx)
+            res = SOLVERS[it["cat"]](it["prompt"], ctx)
         except Exception as e:
             log(f"handler error on {it['id']}: {e}")
             res = {"answer": "", "conf": 0.1, "cat": it["cat"]}
@@ -305,7 +306,9 @@ def run():
         with _lock:
             _results[it["id"]] = ans
         confs[it["id"]] = res.get("conf", 0.3)
-        flush()
+        if not sanity_check(it["prompt"], ans, it["cat"]):
+            confs[it["id"]] = min(confs[it["id"]], 0.15)
+        write_results()
         log(f"[{i+1}/{len(work)}] {it['id']} cat={it['cat']} "
             f"conf={confs[it['id']]:.2f} len={len(ans)}")
 
@@ -325,7 +328,7 @@ def run():
             break
         log(f"pass2 verify {it['id']} (conf={confs[it['id']]:.2f})")
         try:
-            res = HANDLERS[it["cat"]](it["prompt"], ctx)
+            res = SOLVERS[it["cat"]](it["prompt"], ctx)
         except Exception as e:
             log(f"pass2 error {it['id']}: {e}")
             continue
@@ -334,26 +337,26 @@ def run():
                 _results[it["id"]] = json_if_requested(
                     it["prompt"], res["answer"], it["cat"])
             confs[it["id"]] = res["conf"]
-            flush()
+            write_results()
 
     # ---- Hybrid escalation (never in zero mode)
     if MODE == "hybrid":
-        from .fireworks import fw_answer, spent
+        from .remote import remote_answer, token_usage
         esc = [it for it in work if confs[it["id"]] < ESC_CONF]
         esc.sort(key=lambda it: confs[it["id"]])
         for it in esc[:ESC_MAX]:
             if elapsed() > HARD_DEADLINE - 35:
                 break
-            text, tok = fw_answer(it["prompt"], it["cat"])
+            text, tok = remote_answer(it["prompt"], it["cat"])
             if text:
                 with _lock:
                     _results[it["id"]] = text
                 confs[it["id"]] = 0.8
-                flush()
+                write_results()
                 log(f"escalated {it['id']} via Fireworks ({tok} tokens)")
-        log(f"fireworks usage: {spent()}")
+        log(f"fireworks usage: {token_usage()}")
 
-    flush()
+    write_results()
     low = [f"{k}={v:.2f}" for k, v in confs.items() if v < 0.6]
     log(f"done in {elapsed():.1f}s; low-conf: {low or 'none'}")
     llm.stop()
@@ -362,11 +365,11 @@ def run():
 
 if __name__ == "__main__":
     try:
-        code = run()
+        code = run_agent()
     except Exception as e:  # absolute last resort: still emit valid output
         log(f"UNCAUGHT: {e}")
         try:
-            flush()
+            write_results()
         except Exception:
             pass
         code = 0

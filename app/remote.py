@@ -1,8 +1,8 @@
 """Fireworks escalation client (hybrid mode only).
 
-All calls go through FIREWORKS_BASE_URL exactly as the harness requires, use
-only models from ALLOWED_MODELS (read at runtime, never hardcoded), and are
-token-accounted. Zero mode never imports/calls this.
+Every call goes through FIREWORKS_BASE_URL exactly as the harness requires,
+uses only models from ALLOWED_MODELS (read at runtime, never hardcoded), and is
+token-accounted. Zero mode never imports or calls this module.
 """
 import json
 import os
@@ -10,6 +10,8 @@ import ssl
 import sys
 import urllib.error
 import urllib.request
+
+from .prompt_compress import compress_prompt
 
 # Local-dev only: Avast MITMs HTTPS with a cert OpenSSL rejects. The judge VM
 # never sets this. Default: full verification.
@@ -22,7 +24,7 @@ if os.environ.get("FW_INSECURE_SSL") == "1":
 _GENERAL_PREF = ("gemma", "llama", "qwen", "mini", "glm", "deepseek", "kimi")
 _CODE_PREF = ("code", "coder", "kimi", "qwen", "deepseek", "glm", "gemma")
 
-_spent = {"total": 0, "calls": 0}
+_totals = {"total": 0, "calls": 0}
 
 
 def allowed_models():
@@ -30,7 +32,7 @@ def allowed_models():
     return [m.strip() for m in raw.split(",") if m.strip()]
 
 
-def pick_model(cat: str) -> str:
+def choose_model(cat: str) -> str:
     models = allowed_models()
     if not models:
         return ""
@@ -42,7 +44,7 @@ def pick_model(cat: str) -> str:
     return models[0]
 
 
-def _endpoint_candidates():
+def _candidate_endpoints():
     base = (os.environ.get("FIREWORKS_BASE_URL", "") or "").rstrip("/")
     if not base:
         return []
@@ -54,20 +56,21 @@ def _endpoint_candidates():
     return cands
 
 
-def fw_answer(task_prompt: str, cat: str, max_tokens: int = 380):
+def remote_answer(task_prompt: str, cat: str, max_tokens: int = 380):
     """Return (text, tokens) or ("", 0) on failure."""
     key = os.environ.get("FIREWORKS_API_KEY", "")
-    model = pick_model(cat)
+    model = choose_model(cat)
     if not key or not model:
         return "", 0
-    msg = task_prompt + "\n\nAnswer directly and concisely."
+    prompt = compress_prompt(task_prompt, cat) if os.environ.get("COMPRESS_REMOTE") == "1" else task_prompt
+    msg = prompt + "\n\nAnswer directly and concisely."
     body = {
         "model": model,
         "messages": [{"role": "user", "content": msg}],
         "max_tokens": max_tokens,
         "temperature": 0,
     }
-    for url in _endpoint_candidates():
+    for url in _candidate_endpoints():
         for extra in ({"reasoning_effort": "none"}, {}):
             payload = dict(body, **extra)
             try:
@@ -86,21 +89,21 @@ def fw_answer(task_prompt: str, cat: str, max_tokens: int = 380):
                 tok = int(usage.get("total_tokens")
                           or (usage.get("prompt_tokens", 0)
                               + usage.get("completion_tokens", 0)))
-                _spent["total"] += tok
-                _spent["calls"] += 1
+                _totals["total"] += tok
+                _totals["calls"] += 1
                 sys.stderr.write(
-                    f"[fw] model={model} tokens={tok} running_total={_spent['total']}\n")
+                    f"[remote] model={model} tokens={tok} running_total={_totals['total']}\n")
                 return text, tok
             except urllib.error.HTTPError as e:
-                sys.stderr.write(f"[fw] HTTP {e.code} at {url} extra={extra}\n")
+                sys.stderr.write(f"[remote] HTTP {e.code} at {url} extra={extra}\n")
                 if e.code in (400, 404, 422):
                     continue
                 return "", 0
             except Exception as e:
-                sys.stderr.write(f"[fw] error: {e}\n")
+                sys.stderr.write(f"[remote] error: {e}\n")
                 return "", 0
     return "", 0
 
 
-def spent():
-    return dict(_spent)
+def token_usage():
+    return dict(_totals)

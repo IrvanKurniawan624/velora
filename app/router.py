@@ -1,6 +1,9 @@
-"""Zero-cost task classifier: regex/keyword routing across the 8 capability
-categories. Misclassification is non-fatal — every handler is LLM-backed and
-answers the raw prompt — but good routing picks the right verification tools.
+"""Zero-cost task router: regex/keyword routing across the 8 capability
+categories.
+
+Routing mistakes are non-fatal - every handler is LLM-backed and answers the raw
+prompt regardless - but a good guess picks the right verification tools (e.g.
+math gets the program-voting solver, code gets the compile + fuzz check).
 """
 import re
 
@@ -40,7 +43,8 @@ _MATH_SIGNAL = re.compile(
 )
 
 
-def classify(prompt: str) -> str:
+def route(prompt: str) -> str:
+    """Pick one of the CATEGORIES for the prompt (default: factual)."""
     p = prompt.lower()
 
     if re.search(r"named entit|entit(y|ies)\b.*(type|label)|extract.*entit", p):
