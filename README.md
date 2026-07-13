@@ -180,15 +180,23 @@ docker run --rm --cpus=2 --memory=4g \
 
 ```
 app/              the agent (stdlib-only Python)
-  main.py         orchestrator: 2-pass pacing, watchdog, atomic flushes, 2 modes
-  router.py       zero-cost category router
-  solvers.py      per-category handlers + verification
-  gazetteer.py    offline country → capital + body-of-water gazetteer
-  local_model.py  llama-server lifecycle + OpenAI-compatible client
-  sandbox.py      sandboxed execution of model-written Python
-  remote.py       hybrid-mode escalation (token-accounted; zero mode never imports it)
-  prompt_compress.py  optional remote-prompt compression (COMPRESS_REMOTE=1)
-  quality.py      answer sanity gate (degenerate/refusal/non-Latin detection)
+  main.py         thin entry point
+  config.py       runtime environment configuration
+  clients/        local + remote model clients
+    local_client.py   llama-server lifecycle + OpenAI-compatible client
+    remote_client.py  hybrid-mode Fireworks escalation (token-accounted)
+  schemas/        lightweight data models
+    chat.py       ChatResponse, TaskItem, TaskResult
+  services/       core orchestration + solvers + verification
+    agent.py      orchestrator: 2-pass pacing, watchdog, atomic flushes, 2 modes
+    router.py     zero-cost category router
+    solvers.py    per-category handlers + verification
+    pyexec.py     sandboxed execution of model-written Python
+    gazetteer.py  offline country → capital + body-of-water gazetteer
+    gate.py       answer sanity gate (degenerate/refusal/non-Latin detection)
+    self_check.py self-check helpers used by gate
+  utils/          generic utilities
+    compression.py  optional remote-prompt compression (COMPRESS_REMOTE=1)
 Dockerfile        3-stage build: llama.cpp release + GGUF weights + slim runtime
 .github/          CI: build linux/amd64 + smoke test under judge limits
 ```

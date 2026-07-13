@@ -11,7 +11,7 @@ import urllib.error
 import urllib.request
 
 
-class LocalModel:
+class LocalClient:
     """Owns a `llama-server` subprocess and speaks its OpenAI-compatible API.
 
     In local dev, set LLAMA_URL to attach to an already-running server instead of

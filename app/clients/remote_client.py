@@ -11,7 +11,7 @@ import sys
 import urllib.error
 import urllib.request
 
-from .prompt_compress import compress_prompt
+from ..utils.compression import compress_prompt
 
 # Local-dev only: Avast MITMs HTTPS with a cert OpenSSL rejects. The judge VM
 # never sets this. Default: full verification.

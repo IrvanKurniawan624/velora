@@ -14,7 +14,7 @@ import re
 import sys
 
 from .gazetteer import find_capital
-from .sandbox import exec_sandboxed
+from .pyexec import exec_sandboxed
 
 # ---------------------------------------------------------------- helpers
 
